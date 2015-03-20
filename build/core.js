@@ -1,0 +1,1 @@
+"use strict";(function(){var e=this,t=require("./utils"),o={};o.version="0.0.1",t.extend(o,t),"undefined"!=typeof exports?("undefined"!=typeof module&&module.exports&&(exports=module.exports=o),exports.mace=o):e.mace=o}).call(this);

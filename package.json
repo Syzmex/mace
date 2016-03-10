@@ -15,6 +15,7 @@
   "licenses": "MIT",
   "spm": {
     "main": "mace.js",
+    "ignore": [ "dist", "spm_modules", "npm_modules" ],
     "dependencies": {},
     "devDependencies": {
       "expect.js": "0.3.1"

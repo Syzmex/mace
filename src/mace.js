@@ -1,11 +1,11 @@
 
 if ( typeof exports !== 'undefined' ) {
   if ( typeof module !== 'undefined' && module.exports ) {
-    exports = module.exports = mace;
+    exports = module.exports = M;
   }
-  exports.mace = mace;
+  exports.mace = M;
 } else {
-  root.mace = mace;
+  root.mace = M;
 }
 
-}.call( this ) );
+}.call( this || window ) );

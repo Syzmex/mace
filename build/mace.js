@@ -5,9 +5,7 @@
 
 var
 M = {},
-root = M.global = this,
-nav = root.navigator,
-doc = root.document;
+root = M.global = this;
 
 M.version = '0.0.1';
 
@@ -17,7 +15,7 @@ ObjProto = Object.prototype,
 FunProto = Function.prototype,
 
 
-// push     = ArrProto.push,
+push     = ArrProto.push,
 slice    = ArrProto.slice,
 toString = ObjProto.toString,
 hasOwnProperty = ObjProto.hasOwnProperty,
@@ -34,8 +32,9 @@ nonenumprops_ = [
   'valueOf'
 ],
 
+
 // 检查浏览器是否可以遍历出以上属性
-hasEnumBug = !{ toString: null }.propertyIsEnumerable( 'toString' ),
+hasEnumBug = !{ toString: null }.propertyIsEnumerable( 'toString' );
 
 // getLength = M.property( 'length' ),
 
@@ -67,60 +66,64 @@ hasEnumBug = !{ toString: null }.propertyIsEnumerable( 'toString' ),
 // },
 
 
-collectnonenumprops_ = function ( obj, keys_ ) {
-  var key, keys = [], idx = nonenumprops_.length;
-  while ( idx -- ) {
-    key = nonenumprops_[ idx ];
-    if ( hasOwnProperty.call( obj, key ) && !~M.indexOf( keys_, key ) ) {
-      keys.push( key );
-    }
-  }
-  return keys;
-},
 
++ function () {
 
-createindexfinder_ = function ( dir, predicateFind /*, sortedIndex*/ ) {
-  return function ( array, item, idx ) {
-    var i = 0, length = array.length;
-    if ( typeof idx == 'number' ) {
-      if ( dir > 0 ) {
-        i = idx >= 0 ? idx : Math.max( idx + length, i );
-      } else {
-        length = idx >= 0 ? Math.min( idx + 1, length ) : idx + length + 1;
+  var
+
+  // 1 从前往后 -1 从后往前
+  createindexfinder_ = function ( dir, predicateFind /*, sortedIndex*/ ) {
+    return function ( array, item, idx ) {
+      var i = 0, length = array.length;
+      if ( typeof idx == 'number' ) {
+        if ( dir > 0 ) {
+          i = idx >= 0 ? idx : Math.max( idx + length, i );
+        } else {
+          length = idx >= 0 ? Math.min( idx + 1, length ) : idx + length + 1;
+        }
       }
-    }
 
-    // 二分法优化
-    // else if ( sortedIndex && idx && length ) {
-    //   idx = sortedIndex( array, item );
-    //   return array[ idx ] === item ? idx : -1;
-    // }
+      // 二分法优化
+      // else if ( sortedIndex && idx && length ) {
+      //   idx = sortedIndex( array, item );
+      //   return array[ idx ] === item ? idx : -1;
+      // }
 
-    // 找NaN
-    if ( item !== item ) {
-      idx = predicateFind( slice.call( array, i, length ), M.isNaN );
-      return idx >= 0 ? idx + i : -1;
-    }
+      // 找NaN
+      if ( item !== item ) {
+        idx = predicateFind( slice.call( array, i, length ), M.isNaN );
+        return idx >= 0 ? idx + i : -1;
+      }
 
-    for ( idx = dir > 0 ? i : length - 1; idx >= 0 && idx < length; idx += dir ) {
-      if ( array[ idx ] === item ) return idx;
-    }
-    return -1;
-  };
-},
+      for ( idx = dir > 0 ? i : length - 1; idx >= 0 && idx < length; idx += dir ) {
+        if ( array[ idx ] === item ) return idx;
+      }
+      return -1;
+    };
+  },
+
+  // 1 从前往后 -1 从后往前
+  createpredicateindexfinder_ = function ( dir ) {
+    return function ( array, predicate, context ) {
+      var
+      length = array.length,
+      index = dir > 0 ? 0 : length - 1;
+      for (; index >= 0 && index < length; index += dir ) {
+        if ( predicate( array[ index ], index, array ) ) return index;
+      }
+      return -1;
+    };
+  },
+
+  findIndex_     = createpredicateindexfinder_( 1 ),
+  findLastIndex_ = createpredicateindexfinder_( -1 );
+
+  M.indexOf     = createindexfinder_( 1, findIndex_ /*, M.sortedIndex*/ );
+  M.lastIndexOf = createindexfinder_( -1, findLastIndex_ );
+
+}();
 
 
-createpredicateindexfinder_ = function ( dir ) {
-  return function ( array, predicate, context ) {
-    var
-    length = array.length,
-    index = dir > 0 ? 0 : length - 1;
-    for (; index >= 0 && index < length; index += dir ) {
-      if ( predicate( array[ index ], index, array ) ) return index;
-    }
-    return -1;
-  };
-},
 
 
 /**
@@ -139,13 +142,9 @@ createpredicateindexfinder_ = function ( dir ) {
 
 
 
-findIndex_     = createpredicateindexfinder_( 1 ),
-findLastIndex_ = createpredicateindexfinder_( -1 );
-
-
-M.indexOf     = createindexfinder_( 1, findIndex_ /*, M.sortedIndex*/ );
-M.lastIndexOf = createindexfinder_( -1, findLastIndex_ );
-
+/**
+ * 对象UID操作
+ */
 
 // 对象计数
 M.uidcounter_ = 0;
@@ -155,8 +154,7 @@ M._uid_ = 'uid_' + ( ( Math.random() * 1e9 ) >>> 0 );
 
 
 M.getUid = function ( obj ) {
-  return obj[ M._uid_ ] ||
-  ( obj[ M._uid_ ] = ++ M.uidcounter_ );
+  return obj[ M._uid_ ] || ( obj[ M._uid_ ] = ++ M.uidcounter_ );
 };
 
 
@@ -212,12 +210,11 @@ M.pick = function ( obj, props ) {
 
 
 // 扩展函数
-M.extend = function( target /*, var_args*/ ) {
+M.extend = function ( target /*, var_args*/ ) {
 
   var i, j, l, npl, key, source;
 
   l = arguments.length;
-  npl = nonenumprops_.length;
   if ( l < 2 || target == null ) return target;
 
   for ( i = 1; i < l; i ++ ) {
@@ -227,6 +224,7 @@ M.extend = function( target /*, var_args*/ ) {
     }
 
     if ( hasEnumBug ) {
+      npl = nonenumprops_.length;
       for ( j = 0; j < npl; j ++ ) {
         key = nonenumprops_[ j ];
         if ( hasOwnProperty.call( source, key ) ) {
@@ -237,7 +235,6 @@ M.extend = function( target /*, var_args*/ ) {
   }
 
   return target;
-
 };
 
 
@@ -246,7 +243,6 @@ M.extendOwn = function( target /*, var_args*/ ) {
   var i, j, l, npl, key, source;
 
   l = arguments.length;
-  npl = nonenumprops_.length;
   if ( l < 2 || target == null ) return target;
 
   for ( i = 1; i < l; i ++ ) {
@@ -258,6 +254,7 @@ M.extendOwn = function( target /*, var_args*/ ) {
     }
 
     if ( hasEnumBug ) {
+      npl = nonenumprops_.length;
       for ( j = 0; j < npl; j ++ ) {
         key = nonenumprops_[ j ];
         if ( hasOwnProperty.call( source, key ) ) {
@@ -268,7 +265,6 @@ M.extendOwn = function( target /*, var_args*/ ) {
   }
 
   return target;
-
 };
 
 
@@ -322,8 +318,9 @@ M.typeOf = function ( value ) {
   return s;
 };
 
+
 // 判断是否定义过，未定义则等于undefined
-M.isDef = function( val ) {
+M.isDef = function ( val ) {
   return val !== void 0;
 };
 
@@ -380,27 +377,63 @@ M.isString = function ( obj ) {
 };
 
 
-M.isEmpty = function ( obj ) {
++ function () {
 
-  if ( obj == null ) return true;
-  if ( M.isArrayLike( obj ) &&
-      ( M.isArray( obj ) || M.isString( obj ) || M.isArguments( obj ) ) ) {
-    return obj.length === 0;
-  }
+  var collectnonenumprops_ = function ( obj, keys_ ) {
+    var key, keys = [], idx = nonenumprops_.length;
+    while ( idx -- ) {
+      key = nonenumprops_[ idx ];
+      if ( hasOwnProperty.call( obj, key ) && !~M.indexOf( keys_, key ) ) {
+        keys.push( key );
+      }
+    }
+    return keys;
+  };
 
-  var key, keys;
+  M.isEmpty = function ( obj ) {
 
-  for ( key in obj ) {
-    return false;
-  }
+    if ( obj == null ) return true;
 
-  if ( hasEnumBug ) {
-    keys = collectnonenumprops_( obj, [] );
-    return keys.length === 0;
-  }
+    if ( M.isArrayLike( obj ) && ( M.isArray( obj ) || M.isString( obj ) || M.isArguments( obj ) ) ) {
+      return obj.length === 0;
+    }
 
-  return true;
-};
+    var key, keys;
+
+    for ( key in obj ) {
+      return false;
+    }
+
+    if ( hasEnumBug ) {
+      keys = collectnonenumprops_( obj, [] );
+      return keys.length === 0;
+    }
+
+    return true;
+  };
+
+
+  M.keys = function ( obj ) {
+
+    if ( !M.isObject( obj ) ) return [];
+
+    if ( Object.keys ) return Object.keys( obj );
+
+    var key, keys = [];
+    for ( key in obj ) {
+      if ( M.has( obj, key ) ) keys.push( key );
+    }
+
+    if ( hasEnumBug ) {
+      keys.concat( collectnonenumprops_( obj, keys ) );
+    }
+
+    return keys;
+  };
+
+}();
+
+
 
 
 M.has = function ( obj, key ) {
@@ -437,70 +470,57 @@ M.filter = function ( obj, predicate, context ) {
 };
 
 
-M.keys = function ( obj ) {
++ function () {
 
-  if ( !M.isObject( obj ) ) return [];
-  if ( Object.keys ) return Object.keys( obj );
+  var
 
-  var key, keys = [];
-  for ( key in obj ) {
-    if ( M.has( obj, key ) ) keys.push( key );
-  }
-
-  if ( hasEnumBug ) {
-    keys.concat( collectnonenumprops_( obj, keys ) );
-  }
-
-  return keys;
-};
+  // bind函数
+  bindNative_ = function ( fn, context /*, var_args*/ ) {
+    return fn.call.apply( fn.bind, arguments );  // 溜
+  },
 
 
-
-// bind函数
-var bindNative_ = function ( fn, context /*, var_args*/ ) {
-  return fn.call.apply( fn.bind, arguments );  // 溜
-};
-
-
-var bindJs_ = function ( fn, context /*, var_args*/ ) {
-  if ( arguments.length > 2 ) {
-    var boundArgs = ArrProto.slice.call( arguments, 2 );
-    return function () {
-      // Prepend the bound arguments to the current arguments.
-      var newArgs = ArrProto.slice.call( arguments );
-      ArrProto.unshift.apply( newArgs, boundArgs );
-      return fn.apply( context, newArgs );
-    };
-  }
-  else {
-    return function () {
-      return fn.apply( context, arguments );
-    };
-  }
-};
+  bindJs_ = function ( fn, context /*, var_args*/ ) {
+    if ( arguments.length > 2 ) {
+      var boundArgs = ArrProto.slice.call( arguments, 2 );
+      return function () {
+        // Prepend the bound arguments to the current arguments.
+        var newArgs = ArrProto.slice.call( arguments );
+        ArrProto.unshift.apply( newArgs, boundArgs );
+        return fn.apply( context, newArgs );
+      };
+    }
+    else {
+      return function () {
+        return fn.apply( context, arguments );
+      };
+    }
+  };
 
 
-M.bind = function ( fn, context /*, var_args*/ ) {
+  M.bind = function ( fn, context /*, var_args*/ ) {
 
-  if ( !fn ) {
-    throw new Error( "Can't find any function" );
-  }
+    if ( !fn ) {
+      throw new Error( "Can't find any function" );
+    }
 
-  if ( FunProto.bind && FunProto.bind.toString().indexOf( 'native code' ) != -1 ) {
-    M.bind = bindNative_;
-  } else {
-    M.bind = bindJs_;
-  }
+    if ( FunProto.bind && FunProto.bind.toString().indexOf( 'native code' ) != -1 ) {
+      M.bind = bindNative_;
+    } else {
+      M.bind = bindJs_;
+    }
 
-  return M.bind.apply( null, arguments );
-};
+    return M.bind.apply( null, arguments );
+  };
+
+}();
 
 
 M.partial = function ( fn /*, var_args*/ ) {
   var args = ArrProto.slice.call( arguments, 1 );
   return function () {
     var newArgs = args.slice();
-    newArgs.push.apply( newArgs, arguments );
+    push.apply( newArgs, arguments );
     return fn.apply( this, newArgs );
   };
 };
@@ -512,349 +532,223 @@ M.each( [ 'Arguments', 'Function', 'Number', 'Date', 'RegExp', 'Error' ], functi
   };
 } );
 
+
 + function () {
+
   if ( !M.isArguments( arguments ) ) {
     M.isArguments = function ( obj ) {
       return M.has( obj, 'callee' );
     };
   }
-}();
-
-/**
- * Indicates whether or not we can call 'eval' directly to eval code in the
- * global scope. Set to a Boolean by the first call to mace.globalEval (which
- * empirically tests whether eval works for globals). @see mace.globalEval
- * @type {?boolean}
- * @private
- */
-var evalWorksForGlobals_ = !!root.execScript || ( function () {
-  root.eval( 'var _et_ = 1' );
-  if ( root._et_ != void 0 ) {
-    delete root._et_;
-    return true;
-  }
-  return false;
-} () );
-
-
-/**
- * Evals JavaScript in the global scope.  In IE this uses execScript, other
- * browsers use mace.global.eval. If mace.global.eval does not evaluate in the
- * global scope (for example, in Safari), appends a script tag instead.
- * Throws an exception if neither execScript or eval is defined.
- * @param {string} script JavaScript string.
- */
-M.globalEval = function ( script ) {
-  if ( root.execScript ) {
-    root.execScript( script, 'JavaScript' );
-  } else if ( root.eval ) {
-    if ( evalWorksForGlobals_ ) {
-      root.eval( script );
-    } else if ( doc ) {
-      var scriptElt = doc.createElement( 'script' );
-      scriptElt.type = 'text/javascript';
-      scriptElt.defer = false;
-      // Note(user): can't use .innerHTML since "t('<test>')" will fail and
-      // .text doesn't work in Safari 2.  Therefore we append a text node.
-      scriptElt.appendChild( doc.createTextNode( script ) );
-      doc.body.appendChild( scriptElt );
-      doc.body.removeChild( scriptElt );
-    }
-  } else {
-    throw Error( 'globalEval not available' );
-  }
-};
-
-
-+ function ( win, document, navigator ) {
-
-  if ( !document ) return;
-
-  var
-  ua = navigator.userAgent.toLowerCase(),
-  doc = document.documentElement,
-
-  ie = 'ActiveXObject' in win,
-
-  firefox   = ua.indexOf( 'firefox' ) !== -1,
-  webkit    = ua.indexOf( 'webkit' ) !== -1,
-  phantomjs = ua.indexOf( 'phantom' ) !== -1,
-  android23 = ua.search( 'android [23]') !== -1,
-  chrome    = ua.indexOf( 'chrome' ) !== -1,
-  gecko     = ua.indexOf( 'gecko' ) !== -1  && !webkit && !win.opera && !ie,
-
-  mobile = typeof orientation !== 'undefined' || ua.indexOf( 'mobile' ) !== -1,
-  msPointer = !win.PointerEvent && win.MSPointerEvent,
-  pointer = ( win.PointerEvent && navigator.pointerEnabled ) || msPointer,
-
-  ie3d = ie && ( 'transition' in doc.style ),
-  webkit3d = ( 'WebKitCSSMatrix' in win ) && ( 'm11' in new win.WebKitCSSMatrix() ) && !android23,
-  gecko3d = 'MozPerspective' in doc.style,
-  opera12 = 'OTransition' in doc.style,
-
-  eventList = [ 'focusin', 'focusout', 'mouseenter', 'mouseleave', 'input' ],
-
-  isSVG = doc.nodeName.toLowerCase() === 'svg',
-
-  touch = !phantomjs && ( pointer || 'ontouchstart' in win ||
-      ( win.DocumentTouch && document instanceof win.DocumentTouch ) ),
-
-  createElement = function () {
-    if ( typeof document.createElement !== 'function' ) {
-      // This is the case in IE7, where the type of createElement is "object".
-      // For this reason, we cannot call apply() as Object is not a Function.
-      return document.createElement( arguments[ 0 ] );
-    } else if ( isSVG ) {
-      return document.createElementNS.call( document, 'http://www.w3.org/2000/svg',
-          arguments[ 0 ] );
-    } else {
-      return document.createElement.apply( document, arguments );
-    }
-  },
-
-  hasEvent = ( function () {
-
-    // Detect whether event support can be detected via `in`. Test on a DOM element
-    // using the "blur" event b/c it should always exist. bit.ly/event-detection
-    var needsFallback = !( 'onblur' in document.documentElement );
-
-    return function inner ( eventName, element ) {
-
-      var isSupported;
-      if ( !eventName ) { return false; }
-      if ( !element || typeof element === 'string' ) {
-        element = createElement( element || 'div' );
-      }
-
-      // Testing via the `in` operator is sufficient for modern browsers and IE.
-      // When using `setAttribute`, IE skips "unload", WebKit skips "unload" and
-      // "resize", whereas `in` "catches" those.
-      eventName = 'on' + eventName;
-      isSupported = eventName in element;
-
-      // Fallback technique for old Firefox - bit.ly/event-detection
-      if ( !isSupported && needsFallback ) {
-        if ( !element.setAttribute ) {
-          // Switch to generic element if it lacks `setAttribute`.
-          // It could be the `document`, `window`, or something else.
-          element = createElement( 'div' );
-        }
-
-        element.setAttribute( eventName, '' );
-        isSupported = typeof element[ eventName ] === 'function';
-
-        if ( element[ eventName ] !== undefined ) {
-          // If property was created, "remove it" by setting value to `undefined`.
-          element[ eventName ] = undefined;
-        }
-        element.removeAttribute( eventName );
-      }
-      return isSupported;
-    }
-  } )();
-
-  M.support = {
-    ie: ie,
-    ielt9: ie && !document.addEventListener,
-    firefox: firefox,
-    webkit: webkit,
-    gecko: gecko,
-    android: ua.indexOf( 'android' ) !== -1,
-    android23: android23,
-    chrome: chrome,
-    safari: !chrome && ua.indexOf( 'safari' ) !== -1,
-
-    ie3d: ie3d,
-    webkit3d: webkit3d,
-    gecko3d: gecko3d,
-    opera12: opera12,
-    any3d: !win.L_DISABLE_3D && ( ie3d || webkit3d || gecko3d ) && !opera12 && !phantomjs,
-
-    mobile: mobile,
-    mobileWebkit: mobile && webkit,
-    mobileWebkit3d: mobile && webkit3d,
-    mobileOpera: mobile && win.opera,
-    mobileGecko: mobile && gecko,
-
-    touch: !!touch,
-    msPointer: !!msPointer,
-    pointer: !!pointer,
-
-    retina: ( win.devicePixelRatio || ( win.screen.deviceXDPI / win.screen.logicalXDPI ) ) > 1
-  };
-
-
-  // 事件测试
-  M.each( eventList, function ( event ) {
-    M.support[ event ] = hasEvent( event );
-  } );
-
-}( root, doc, nav );
-
-+ function () {
-
-var
-BaseClass = function () {
-
-  // 初始化
-  if ( this.__init__ ) {
-    this.__init__.apply( this, arguments );
-  }
-
-};
-
-
-BaseClass.version = '0.0.1';
-
-
-BaseClass.prototype.destroy = function () {
-  this.destroyInternal();
-  M.each( this, function ( v, key ) {
-    M.has( this, key ) && ( this[ key ] = null );
-  }, this );
-  this.isDisposed = true;
-};
-
-
-/**
- * 连带销毁的使用场景
- * 父页面子页面继承与同一个类
- * 父页面销毁连带子页面销毁只要用此方法不需要在destroy中添加销毁的代码
- */
-
-// 运行销毁回调函数
-// 可以连带销毁相关的对象
-BaseClass.prototype.destroyInternal = function () {
-  if ( this.internalCallbacks_ ) {
-    while ( this.internalCallbacks_.length ) {
-      this.internalCallbacks_.shift()();
-    }
-  }
-};
-
-// 添加连带销毁的对象
-BaseClass.prototype.addInternalCallbacks = function ( fun ) {
-  if ( M.isFunction( fun ) ) {
-    this.internalCallbacks_
-        ? this.internalCallbacks_.push( fun )
-        : this.internalCallbacks_ = [ fun ];
-  } else {
-    new Error( "Can't find function" );
-  }
-};
-
-
-
-// 摒弃之前的makeClass把extend(父类)作为参数传递进来的写法
-// 避免检查extend(父类)参数的合法性
-// 该方法应该作为一个类方法
-// proto上只写方法不要写属性基本没有实际意义
-var objectExtend = function ( proto, staticProperty ) {
-
-  var Derivative,
-  parent = this;
-
-  if ( proto && M.has( proto, 'constructor' ) ) {
-    Derivative = proto.constructor;
-  } else {
-    Derivative = function () { return parent.apply( this, arguments ) };
-  }
 
   /**
-   * 创建一个构造函数
+   * Indicates whether or not we can call 'eval' directly to eval code in the
+   * global scope. Set to a Boolean by the first call to mace.globalEval (which
+   * empirically tests whether eval works for globals). @see mace.globalEval
+   * @type {?boolean}
+   * @private
    */
-  var Progenitor = function () { this.constructor = Derivative };
-  Progenitor.prototype = parent.prototype;
-  Derivative.prototype = new Progenitor;
-
-
-  // 初始化函数
-  if ( !proto.__init__ ) {
-    proto.__init__ = function () {
-      if ( M.isFunction( parent.prototype.__init__ ) ) {
-        parent.prototype.__init__.apply( this, arguments );
-      }
-      if ( M.isFunction( proto.init ) ) {
-        proto.init.apply( this, arguments );
-      }
-    };
-  }
-
-  // 销毁方法所有属性清空
-  var destroy_ = proto.destroy;
-  proto.destroy = function () {
-    if ( M.isFunction( destroy_ ) ) {
-      destroy_.apply( this, arguments );
+  var evalWorksForGlobals_ = !!root.execScript || ( function () {
+    root.eval( 'var _et_ = 1' );
+    if ( root._et_ != void 0 ) {
+      delete root._et_;
+      return true;
     }
-    if ( M.isFunction( parent.prototype.destroy ) ) {
-      parent.prototype.destroy.apply( this, arguments );
+    return false;
+  }() );
+
+  /**
+   * Evals JavaScript in the global scope.  In IE this uses execScript, other
+   * browsers use mace.global.eval. If mace.global.eval does not evaluate in the
+   * global scope (for example, in Safari), appends a script tag instead.
+   * Throws an exception if neither execScript or eval is defined.
+   * @param {string} script JavaScript string.
+   */
+  M.globalEval = function ( script ) {
+    if ( root.execScript ) {
+      root.execScript( script, 'JavaScript' );
+    } else if ( root.eval ) {
+      if ( evalWorksForGlobals_ ) {
+        root.eval( script );
+      } else if ( doc ) {
+        var scriptElt = doc.createElement( 'script' );
+        scriptElt.type = 'text/javascript';
+        scriptElt.defer = false;
+        // Note(user): can't use .innerHTML since "t('<test>')" will fail and
+        // .text doesn't work in Safari 2.  Therefore we append a text node.
+        scriptElt.appendChild( doc.createTextNode( script ) );
+        doc.body.appendChild( scriptElt );
+        doc.body.removeChild( scriptElt );
+      }
+    } else {
+      throw Error( 'globalEval not available' );
     }
   };
-
-  // 新属性
-  M.extend( Derivative.prototype, proto );
-
-  // 类方法叠加
-  if ( M.isFunction( staticProperty ) ) {
-    M.extend( Derivative, parent );
-    staticProperty( Derivative );
-  } else {
-    M.extend( Derivative, parent, staticProperty );
-  }
-
-    // 记录父类的原型
-  Derivative.__super__ = parent.prototype;
-
-  // 添加寻找父类方法的途径，更好的来访问父类的方法
-  Derivative.super_ = function ( obj, methodName ) {
-    // Copying using loop to avoid deop due to passing arguments object to
-    // function. This is faster in many JS engines as of late 2014.
-    var i, l, args = [];
-    for ( i = 2, l = arguments.length; i < l; i ++ ) {
-      args[ i - 2 ] = arguments[ i ];
-    }
-    return parent.prototype[ methodName ].apply( obj, args );
-  };
-
-  return Derivative;
-
-};
-
-
-BaseClass.extend = objectExtend;
-BaseClass.include = function ( opt ) {
-  M.extend( this.prototype, opt );
-};
-
-
-/**
- * 用函数创建类
- * 默认从BaseClass继承
- */
-M.createClass = function ( base, proto, staticProperty ) {
-  if ( M.isFunction( base ) && base.extend === objectExtend ) {
-    return base.extend( proto, staticProperty );
-  } else {
-    staticProperty = proto;
-    proto = base;
-  }
-  return BaseClass.extend( proto, staticProperty );
-};
 
 }();
+
+
+
+
 
 
 + function () {
 
   var
 
-  counter_ = 0,
+  BaseClass = function () {
 
-  dictionary = {},
+    // 初始化
+    if ( this.__init__ ) {
+      this.__init__.apply( this, arguments );
+    }
 
-  dicmap = {};
+  };
 
 
+  BaseClass.prototype.destroy = function () {
+    this.destroyInternal();
+    M.each( this, function ( v, key ) {
+      M.has( this, key ) && ( this[ key ] = null );
+    }, this );
+    this.isDisposed = true;
+  };
+
+
+  /**
+   * 连带销毁的使用场景
+   * 父页面子页面继承与同一个类
+   * 父页面销毁连带子页面销毁只要用此方法不需要在destroy中添加销毁的代码
+   */
+
+  // 运行销毁回调函数
+  // 可以连带销毁相关的对象
+  BaseClass.prototype.destroyInternal = function () {
+    if ( this.internalCallbacks_ ) {
+      while ( this.internalCallbacks_.length ) {
+        this.internalCallbacks_.shift()();
+      }
+    }
+  };
+
+
+  // 添加连带销毁的对象
+  BaseClass.prototype.addInternalCallbacks = function ( fun ) {
+    if ( M.isFunction( fun ) ) {
+      this.internalCallbacks_
+          ? this.internalCallbacks_.push( fun )
+          : this.internalCallbacks_ = [ fun ];
+    } else {
+      new Error( "Can't find function" );
+    }
+  };
+
+
+  // 摒弃之前的makeClass把extend(父类)作为参数传递进来的写法
+  // 避免检查extend(父类)参数的合法性
+  // 该方法应该作为一个类方法
+  // proto上只写方法不要写属性基本没有实际意义
+  var objectExtend = function ( proto, staticProperty ) {
+
+    var Derivative,
+    parent = this;
+
+    if ( proto && M.has( proto, 'constructor' ) ) {
+      Derivative = proto.constructor;
+    } else {
+      Derivative = function () { return parent.apply( this, arguments ) };
+    }
+
+    /**
+     * 创建一个构造函数
+     */
+    var Progenitor = function () { this.constructor = Derivative };
+    Progenitor.prototype = parent.prototype;
+    Derivative.prototype = new Progenitor;
+
+
+    // 初始化函数
+    if ( !proto.__init__ ) {
+      proto.__init__ = function () {
+        if ( M.isFunction( parent.prototype.__init__ ) ) {
+          parent.prototype.__init__.apply( this, arguments );
+        }
+        if ( M.isFunction( proto.init ) ) {
+          proto.init.apply( this, arguments );
+        }
+      };
+    }
+
+    // 销毁方法所有属性清空
+    var destroy_ = proto.destroy;
+    proto.destroy = function () {
+      if ( M.isFunction( destroy_ ) ) {
+        destroy_.apply( this, arguments );
+      }
+      if ( M.isFunction( parent.prototype.destroy ) ) {
+        parent.prototype.destroy.apply( this, arguments );
+      }
+    };
+
+    // 新属性
+    M.extend( Derivative.prototype, proto );
+
+    // 类方法叠加
+    if ( M.isFunction( staticProperty ) ) {
+      M.extend( Derivative, parent );
+      staticProperty( Derivative );
+    } else {
+      M.extend( Derivative, parent, staticProperty );
+    }
+
+      // 记录父类的原型
+    Derivative.__super__ = parent.prototype;
+
+    // 添加寻找父类方法的途径，更好的来访问父类的方法
+    Derivative.super_ = function ( obj, methodName ) {
+      // Copying using loop to avoid deop due to passing arguments object to
+      // function. This is faster in many JS engines as of late 2014.
+      var i, l, args = [];
+      for ( i = 2, l = arguments.length; i < l; i ++ ) {
+        args[ i - 2 ] = arguments[ i ];
+      }
+      return parent.prototype[ methodName ].apply( obj, args );
+    };
+
+    return Derivative;
+
+  };
+
+
+  BaseClass.extend = objectExtend;
+
+
+  /**
+   * 扩充属性
+   */
+  BaseClass.include = function ( props ) {
+    M.extend( this.prototype, props );
+  };
+
+
+  /**
+   * 用函数创建类
+   * 默认从BaseClass继承
+   */
+  M.createClass = function ( base, proto, staticProperty ) {
+    if ( M.isFunction( base ) && base.extend === objectExtend ) {
+      return base.extend( proto, staticProperty );
+    }
+    staticProperty = proto;
+    proto = base;
+    return BaseClass.extend( proto, staticProperty || {} );
+  };
+
+
+}();
+
+
++ function () {
 
   var
 
@@ -941,611 +835,710 @@ M.createClass = function ( base, proto, staticProperty ) {
 
 
   dicStatic = {
-
-    uuid: function () {
-      return ++ counter_;
-    }
-
+    version: '0.0.1'
   };
-
 
   M.Cache = M.Dictionary = M.createClass( dicProto, dicStatic );
 
-
-} ();
-
-
-/*
-
-var
-mode = new M.Cache();
-mode.put( obj, {} );
-mode.get( obj ); ==> {}
-
- */
-
-
-var
-
-
-// 事件名称分割符
-splitter = /\s+/,
-
-// 带变量名的change事件
-changeSplitter = /:/,
-changeName = /^change:\S*$/,
-
-
-// 事件池
-eventpool_ = {},
-
-// sortStack = function ( stack ) {
-//   var i, j, l, newStack = [];
-//   for ( i = 0, l = stack.length; i < l; i ++ ) {
-//     var ling1 = stack[ i ], ling2 = stack[ l - i - 1 ];
-//     if ( M.isBoolean( ling1.context ) && ling1.context === false ) {
-//       newStack.push( ling1 );
-//     }
-//     if ( M.isBoolean( ling2.context ) && ling2.context === true ) {
-//       newStack.unshift( ling2 );
-//     }
-//   }
-//   return newStack;
-// },
-
-/**
- * 针对变量名添加时间触发
- * 参数 name = 'change:变量名'
- * writable: false
- * enumerable: true
- * configurable: false
- * 不建议频繁赋值该属性
- */
-bindAttributeChangeTrigger_ = function ( obj, name ) {
-  var curr, varName = name.split( changeSplitter )[ 1 ];
-  Object.defineProperty( obj, varName, {
-    set: function ( val ) {
-      if ( curr !== val ) {
-        this.trigger( name, curr = val );
-      }
-    },
-    get: function () {
-      return curr;
-    },
-    enumerable: true
-  } );
-},
-
-
-/**
- * 添加事件到列表
- */
-putIntoEvent_ = function ( events, obj, name, clb, context, listening ) {
-
-  var i, l, ling,
-  cxt = context !== void 0 ? context : ( listening ? listening.listener : obj ),
-  stack = events[ name ] || ( events[ name ] = [] );
-
-  // 相同函数不重复绑定
-  for ( i = 0, l = stack.length; i < l; i ++ ) {
-    if ( context !== void 0 ) {
-      if ( stack[ i ].callback === clb && stack[ i ].context === context ) return events;
-      if ( clb.__clb__ && stack[ i ].callback.__clb__ === clb.__clb__ &&
-          stack[ i ].context === context ) return events;
-    } else {
-      if ( stack[ i ].callback === clb ) return events;
-      if ( clb.__clb__ && stack[ i ].callback.__clb__ === clb.__clb__ ) return events;
-    }
-  }
-
-  ling = {
-    obj: obj,
-    context: cxt,
-    callback: clb
-  };
-
-  if ( listening ) {
-    listening.count ++;
-    ling.listener = listening.listener;
-  }
-
-  if ( changeName.test( name ) ) {
-    bindAttributeChangeTrigger_( obj, name );
-  }
-
-  stack.push( ling );
-
-  return events;
-},
-
-
-/**
- * 从列表删除事件
- */
-clearOutofEvent_ = function ( events, obj, name, clb, context, listening ) {
-
-  // 监听销毁
-  // 取出监听相关的事件比对删除
-  if ( listening ) {
-    var allLen = 0, listener = listening.listener;
-    M.each( name ? [ name ] : M.keys( events ), function ( name ) {
-      var stack = events[ name ], len = stack.length;
-      stack = M.filter( stack, function ( event ) {
-        if ( event.listener === listener ) {
-          if ( clb && event.callback.__clb__ ) {
-            return context === void 0 ? event.callback.__clb__ !== clb
-                : ( event.context !== context || event.callback.__clb__ !== clb );
-          } else if ( clb ) {
-            return context === void 0 ? event.callback !== clb
-                : ( event.context !== context || event.callback !== clb );
-          }
-        }
-        return true;
-      } );
-      allLen += len - stack.length;
-      if ( stack.length ) {
-        events[ name ] = stack;
-      } else {
-        delete events[ name ];
-      }
-    } );
-    listening.count -= allLen;
-  }
-
-  // 普通事件删除
-  else  if ( clb ) {
-    M.each( name ? [ name ] : M.keys( events ), function ( name ) {
-      var stack = events[ name ];
-      stack = M.filter( stack, function ( event ) {
-        if ( event.callback.__clb__ ) {
-          return context === void 0 ? event.callback.__clb__ !== clb
-              : ( event.context !== context || event.callback.__clb__ !== clb );
-        }
-        return context === void 0 ? event.callback !== clb
-            : ( event.context !== context || event.callback !== clb );
-      } );
-      if ( stack.length ) {
-        events[ name ] = stack;
-      } else {
-        delete events[ name ];
-      }
-    } );
-  } else if ( name ) {
-    delete events[ name ];
-  } else {
-    events = {};
-  }
-
-  return events;
-},
-
-
-/**
- * 添加到事件池
- */
-addToPool_ = function ( obj, name, clb, context, listening ) {
-  if ( clb ) {
-    var
-    uid = M.getUid( obj ),
-    eventCache = eventpool_[ uid ],
-    events = obj.__events__ || ( obj.__events__ = {} );
-    obj.__events__ = putIntoEvent_( events, obj, name, clb, context, listening );
-    if ( !eventCache ) {
-      eventpool_[ uid ] = obj;
-    }
-    if ( listening ) {
-      var listeners = obj.__listeners__ || ( obj.__listeners__ = {} ),
-      listener = listeners[ listening.id ];
-      if ( !listener ) {
-        listeners[ listening.id ] = listening;
-      }
-    }
-  }
-},
-
-
-/**
- * 从事件池清除
- */
-clearOutofPool_ = function ( obj, name, clb, context, listening ) {
-  var
-  uid = M.getUid( obj ),
-  events = obj.__events__;
-
-  if ( events ) {
-    events = clearOutofEvent_( events, obj, name, clb, context, listening );
-  }
-
-  if ( events && M.isEmpty( events ) ) {
-    delete obj.__events__;
-    delete eventpool_[ uid ];
-  } else {
-    obj.__events__ = events;
-  }
-
-  if ( listening ) {
-    var
-    listener = listening.listener,
-    listeners = obj.__listeners__,
-    listentos = listener.__listenTo__;
-    if ( listening.count === 0 ) {
-      delete listeners[ listening.id ];
-      delete listentos[ listening.objId ];
-    }
-    if ( M.isEmpty( listeners ) ) {
-      delete obj.__listeners__;
-    }
-    if ( M.isEmpty( listentos ) ) {
-      delete listener.__listenTo__;
-    }
-  }
-},
-
-
-// 事件处理
-eventsArgs_ = function ( predicate, obj, events, callback, context, listening ) {
-
-  // jQuery风格
-  if ( M.isObject( events ) ) {
-    var i, l, k, evtList = M.isArray( events ) ? events : M.keys( events );
-    for ( i = 0, l = evtList.length; i < l; i ++ ) {
-      eventsArgs_( predicate, obj, k = evtList[ i ], events[ k ], callback, listening );
-    }
-  }
-
-  // 多个处理
-  else if ( events && splitter.test( events ) ) {
-    M.each( events.split( splitter ), function ( evt ) {
-      evt && predicate( obj, evt, callback, context, listening );
-    } );
-  }
-
-  // 单个处理
-  else {
-    predicate( obj, events, callback, context, listening );
-  }
-
-},
-
-
-// 绑定事件
-on_ = function ( obj, events, callback, context, listening  ) {
-  if ( callback && M.isObject( events ) ) {
-    context = callback;
-    callback = void 0;
-  }
-  eventsArgs_( addToPool_, obj, events, callback, context, listening );
-},
-
-
-once_ = function ( obj, events, callback, context, listening ) {
-
-  if ( M.isObject( events ) ) {
-    var i, l, k, names = M.keys( events );
-    for ( i = 0, l = names.length; i < l; i ++ ) {
-      once_( obj, k = names[ i ], events[ k ], callback, listening );
-    }
-  }
-
-  var clb = function () {
-    callback.apply( this, arguments );
-    obj.off( events, clb, context );
-  };
-  clb.__clb__ = callback;
-
-  on_( obj, events, clb, context, listening );
-},
-
-
-// 销毁事件
-// -events void 0 void 0 (object|string _ _)
-// -void 0 callback void 0 (_ function _)
-// -events callback void 0 (string function _)
-// -events void 0 context (object|string _ object|bool)
-// -void 0 callback context (_ function object|bool)
-// -events callback context (string function object|bool)
-off_ = function ( obj, events, callback, context, listening ) {
-  if ( M.isFunction( events ) ) {
-    context = callback;
-    callback = events;
-    events = void 0;
-  } else if ( events && callback && !M.isFunction( callback ) && !M.isFunction( events ) ) {
-    context = callback;
-    callback = void 0;
-  }
-  eventsArgs_( clearOutofPool_, obj, events, callback, context, listening );
-},
-
-
-// 触发事件
-emit_ = function ( obj, names, args, wantEvent ) {
-  var
-  events = obj.__events__;
-  M.each( names.split( splitter ), function ( name ) {
-
-    // 事件触发开关
-    // silenceStack中的事件不触发
-    if ( name && !~M.indexOf( obj.__silenceStack__, name ) ) {
-      triggerEvt_( obj, events, name, args, wantEvent );
-    }
-
-  } );
-},
-
-
-triggerEvt_ = function ( obj, events, name, args, wantEvent ) {
-  var ev,
-  stack = events[ name ],
-  allStack = events[ 'all' ];
-  if ( stack ) {
-    if ( wantEvent ) {
-      ev = new M.Event( { type: name, currentType: name, target: obj, data: args } );
-    }
-    callEvtCb_( stack, ev ? [ ev ].concat( args ) : args );
-  }
-  if ( allStack && name !== 'all' ) {
-    if ( wantEvent ) {
-      ev = new M.Event( { type: name, currentType: 'all', target: obj, data: args } );
-    }
-    callEvtCb_( allStack, ev ? [ ev ].concat( args ) : args );
-  }
-},
-
-
-// 函数运行优化
-callEvtCb_ = function ( stack, args ) {
-  var a1 = args[ 0 ], a2 = args[ 1 ], a3 = args[ 2 ], a4 = args[ 3 ];
-  switch ( args.length ) {
-    case 1: doWhileWithoutArguments_( stack, a1 ); return;
-    case 2: doWhileWithoutArguments_( stack, a1, a2 ); return;
-    case 3: doWhileWithoutArguments_( stack, a1, a2, a3 ); return;
-    case 4: doWhileWithoutArguments_( stack, a1, a2, a3, a4 ); return;
-    default: doWhile_( stack, args ); return;
-  }
-},
-
-
-doWhileWithoutArguments_ = function ( stack, a1, a2, a3, a4 ) {
-  var fireAll, sk,
-  isImmediatePropagationStopped = false,
-  ev = a1, i = -1, l = stack.length, trueList = [], falseList = [];
-  while ( ++ i < l && !isImmediatePropagationStopped ) {
-
-    // 基础自定义事件处理
-    sk = stack[ i ];
-
-    // DomEvented 事件处理
-    if ( sk.obj.__eventhandle__ ) {
-      fireAll = sk.obj.__eventhandle__[ ev.type ].__fireAll__;
-      if ( fireAll || ( ev.fired && ev.usecapture == void 0 ) || ev.usecapture === sk.context ) {
-        sk.callback.call( sk.obj.element, a1, a2, a3, a4 );
-      }
-    }
-
-    // 普通事件处理
-    else {
-      sk.callback.call( sk.context, a1, a2, a3, a4 );
-    }
-
-    isImmediatePropagationStopped = ev && ev.isImmediatePropagationStopped;
-
-  }
-},
-
-
-doWhile_ = function ( stack, args ) {
-  var fireAll, sk,
-  isImmediatePropagationStopped = false,
-  ev = args[ 0 ], i = -1, l = stack.length;
-  while ( ++ i < l && !isImmediatePropagationStopped ) {
-
-    // 基础自定义事件处理
-    sk = stack[ i ];
-
-    // DomEvented 事件处理
-    if ( sk.obj.__eventhandle__ ) {
-      fireAll = sk.obj.__eventhandle__[ ev.type ].__fireAll__;
-      if ( fireAll || ( ev.fired && ev.usecapture == void 0 ) || ev.usecapture === sk.context ) {
-        sk.callback.apply( sk.obj.element, args );
-      }
-    }
-
-    // 普通事件处理
-    else {
-      sk.callback.apply( sk.context, args );
-    }
-
-    isImmediatePropagationStopped = ev && ev.isImmediatePropagationStopped;
-
-  }
-},
-
-
-listenTo_ = function ( onFun, obj, events, callback, context ) {
-  var
-  thisId = M.getUid( this ),
-  objId = M.getUid( obj ),
-  listenTo = this.__listenTo__ || ( this.__listenTo__ = {} ),
-  listening = listenTo[ objId ];
-  if ( !listening ) {
-    listening = listenTo[ objId ] = { obj: obj, objId: objId, listener: this,
-        id: thisId, count: 0 };
-  }
-  onFun( obj, events, callback, context, listening );
-},
-
-
-eventedProto = {
-
-  init: function () {
-
-    // 我是独一无二的
-    M.getUid( this );
-
-    // 事件机制总开关
-    this.__silence__ = false;
-
-    this.__silenceStack__ = [];
-  },
-
-
-  destroy: function () {
-    M.removeUid( this );
-    M.Evented.super_( this, 'destroy' );
-  },
-
-
-  /**
-   * 添加事件开关
-   */
-  silence: function ( names /*, var_args*/ ) {
-    if ( !names ) return this.__silence__ = true;
-    if ( !M.isArray( names ) ) {
-      names = slice.call( arguments );
-    }
-    M.each( names, function ( name ) {
-      if ( !~M.indexOf( this.__silenceStack__, name ) ) {
-        this.__silenceStack__.push( name );
-      }
-    } );
-  },
-
-
-  /**
-   * 取消事件开关
-   */
-  desilence: function ( names ) {
-    if ( !names ) return this.__silence__ = false;
-    if ( !M.isArray( names ) ) names = [ names ];
-    this.__silenceStack__ = M.filter( this.__silenceStack__, function ( name ) {
-      return !~M.indexOf( names, name );
-    } );
-  },
-
-
-  /**
-   * 绑定事件
-   * 1.单个参数jquery风格
-   * { click: callback ... }
-   * 2.多个参数
-   * ( 'click', callback, [ context ] )
-   * ( 'click blur', callback, [ context ] )
-   */
-  on: function ( events, callback, context ) {
-    events && on_( this, events, callback, context );
-    return this;
-  },
-
-
-  once: function ( events, callback, context ) {
-    events && once_( this, events, callback, context );
-    return this;
-  },
-
-
-  /**
-   * 解绑事件
-   * 参数同上
-   */
-  off: function ( events, callback, context ) {
-    if ( events && this.__events__ ) off_( this, events, callback, context );
-    return this;
-  },
-
-
-  /**
-   * 触发事件
-   * 参数 names ('click'|'click blur')
-   */
-  trigger: function ( names /*, var_args*/ ) {
-    if ( !this.__silence__ && names && this.__events__ ) {
-      var ev, args = slice.call( arguments, 1 );
-      if ( M.isObject( names ) && names.type ) {
-        ev = names;
-        names = [ ev.type ];
-        args.unshift( ev );
-        this.__wantEvent__ = false;
-        ev.isImmediatePropagationStopped = false;
-      }
-      emit_( this, names, args, this.__wantEvent__ !== false );
-    }
-    return this;
-  },
-
-
-  listenTo: function ( obj, events, callback, context ) {
-    obj && listenTo_.call( this, on_, obj, events, callback, context );
-    return this;
-  },
-
-
-  listenToOnce: function ( obj, events, callback, context ) {
-    obj && listenTo_.call( this, once_, obj, events, callback, context );
-    return this;
-  },
-
-
-  stopListen: function ( obj, events, callback, context ) {
-    if ( obj && this.__listenTo__ ) {
-      var i, l, listening,
-      listenTo = this.__listenTo__,
-      ids = obj ? [ M.getUid( obj ) ] : M.keys( this.__listenTo__ );
-
-      for ( i = 0, l = ids.length; i < l; i ++ ) {
-        listening = listenTo[ ids[ i ] ];
-        if ( !listening ) break;
-        off_( listening.obj, events, callback, context, listening );
-      }
-    }
-    return this;
-  }
-
-},
-
-
-// 类方法
-eventedStatic = {
-  version: '0.0.1',
-  eventpool: eventpool_,
-  getObject: function ( uid ) {
-    return eventpool_[ uid ];
-  }
-};
-
-
-M.Object = M.Evented = M.createClass( eventedProto, eventedStatic );
-
-
-var
-
-eventProto = {
-  init: function ( props ) {
-    this.type;
-    this.currentType;
-    M.extendOwn( this, props );
-
-    // 判定是否阻止了同类型事件的冒泡
-    this.isImmediatePropagationStopped = false;
-
-  },
-
-  stopImmediatePropagation: function () {
-    this.isImmediatePropagationStopped = true;
-  }
-
-},
-
-eventStatic = {};
-
-M.Event = M.createClass( eventProto, eventStatic );
-
-
+}();
 
 
 
 + function () {
 
-  if ( !doc ) return;
+
+  /**
+   * 自定义事件对象
+   */
+  var
+
+  eventProto = {
+
+    init: function ( props ) {
+      this.type;
+      this.currentType;
+      M.extendOwn( this, props );
+
+      // 判定是否阻止了同类型事件的冒泡
+      this.isImmediatePropagationStopped = false;
+
+    },
+
+    stopImmediatePropagation: function () {
+      this.isImmediatePropagationStopped = true;
+    }
+
+  };
+
+  M.Event = M.createClass( eventProto );
+
+
+  var
+
+  // 事件名称分割符
+  splitter = /\s+/,
+
+  // 带变量名的change事件
+  changeSplitter = /:/,
+  changeName = /^change:\S*$/,
+
+  // 事件池
+  eventpool_ = {},
+
+
+  /**
+   * 针对变量名添加时间触发
+   * 参数 name = 'change:变量名'
+   * writable: false
+   * enumerable: true
+   * configurable: false
+   * 不建议频繁赋值该属性
+   */
+  bindAttributeChangeTrigger_ = function ( obj, name ) {
+    var curr, varName = name.split( changeSplitter )[ 1 ];
+    Object.defineProperty( obj, varName, {
+      set: function ( val ) {
+        if ( curr !== val ) {
+          this.trigger( name, curr = val );
+        }
+      },
+      get: function () {
+        return curr;
+      },
+      enumerable: true
+    } );
+  },
+
+
+  /**
+   * 添加事件到列表
+   */
+  putIntoEvent_ = function ( events, obj, name, clb, context, listening ) {
+
+    var i, l, ling,
+    cxt = context !== void 0 ? context : ( listening ? listening.listener : obj ),
+    stack = events[ name ] || ( events[ name ] = [] );
+
+    // 相同函数不重复绑定
+    for ( i = 0, l = stack.length; i < l; i ++ ) {
+      if ( context !== void 0 ) {
+        if ( stack[ i ].callback === clb && stack[ i ].context === context ) return events;
+        if ( clb.__clb__ && stack[ i ].callback.__clb__ === clb.__clb__ &&
+            stack[ i ].context === context ) return events;
+      } else {
+        if ( stack[ i ].callback === clb ) return events;
+        if ( clb.__clb__ && stack[ i ].callback.__clb__ === clb.__clb__ ) return events;
+      }
+    }
+
+    ling = {
+      obj: obj,
+      context: cxt,
+      callback: clb
+    };
+
+    if ( listening ) {
+      listening.count ++;
+      ling.listener = listening.listener;
+    }
+
+    if ( changeName.test( name ) ) {
+      bindAttributeChangeTrigger_( obj, name );
+    }
+
+    stack.push( ling );
+
+    return events;
+  },
+
+
+  /**
+   * 从列表删除事件
+   */
+  clearOutofEvent_ = function ( events, obj, name, clb, context, listening ) {
+
+    // 监听销毁
+    // 取出监听相关的事件比对删除
+    if ( listening ) {
+      var allLen = 0, listener = listening.listener;
+      M.each( name ? [ name ] : M.keys( events ), function ( name ) {
+        var stack = events[ name ], len = stack.length;
+        stack = M.filter( stack, function ( event ) {
+          if ( event.listener === listener ) {
+            if ( clb && event.callback.__clb__ ) {
+              return context === void 0 ? event.callback.__clb__ !== clb
+                  : ( event.context !== context || event.callback.__clb__ !== clb );
+            } else if ( clb ) {
+              return context === void 0 ? event.callback !== clb
+                  : ( event.context !== context || event.callback !== clb );
+            }
+          }
+          return true;
+        } );
+        allLen += len - stack.length;
+        if ( stack.length ) {
+          events[ name ] = stack;
+        } else {
+          delete events[ name ];
+        }
+      } );
+      listening.count -= allLen;
+    }
+
+    // 普通事件删除
+    else  if ( clb ) {
+      M.each( name ? [ name ] : M.keys( events ), function ( name ) {
+        var stack = events[ name ];
+        stack = M.filter( stack, function ( event ) {
+          if ( event.callback.__clb__ ) {
+            return context === void 0 ? event.callback.__clb__ !== clb
+                : ( event.context !== context || event.callback.__clb__ !== clb );
+          }
+          return context === void 0 ? event.callback !== clb
+              : ( event.context !== context || event.callback !== clb );
+        } );
+        if ( stack.length ) {
+          events[ name ] = stack;
+        } else {
+          delete events[ name ];
+        }
+      } );
+    } else if ( name ) {
+      delete events[ name ];
+    } else {
+      events = {};
+    }
+
+    return events;
+  },
+
+
+  /**
+   * 添加到事件池
+   */
+  addToPool_ = function ( obj, name, clb, context, listening ) {
+    if ( clb ) {
+      var
+      uid = M.getUid( obj ),
+      eventCache = eventpool_[ uid ],
+      events = obj.__events__ || ( obj.__events__ = {} );
+      obj.__events__ = putIntoEvent_( events, obj, name, clb, context, listening );
+      if ( !eventCache ) {
+        eventpool_[ uid ] = obj;
+      }
+      if ( listening ) {
+        var listeners = obj.__listeners__ || ( obj.__listeners__ = {} ),
+        listener = listeners[ listening.id ];
+        if ( !listener ) {
+          listeners[ listening.id ] = listening;
+        }
+      }
+    }
+  },
+
+
+  /**
+   * 从事件池清除
+   */
+  clearOutofPool_ = function ( obj, name, clb, context, listening ) {
+    var
+    uid = M.getUid( obj ),
+    events = obj.__events__;
+
+    if ( events ) {
+      events = clearOutofEvent_( events, obj, name, clb, context, listening );
+    }
+
+    if ( events && M.isEmpty( events ) ) {
+      delete obj.__events__;
+      delete eventpool_[ uid ];
+    } else {
+      obj.__events__ = events;
+    }
+
+    if ( listening ) {
+      var
+      listener = listening.listener,
+      listeners = obj.__listeners__,
+      listentos = listener.__listenTo__;
+      if ( listening.count === 0 ) {
+        delete listeners[ listening.id ];
+        delete listentos[ listening.objId ];
+      }
+      if ( M.isEmpty( listeners ) ) {
+        delete obj.__listeners__;
+      }
+      if ( M.isEmpty( listentos ) ) {
+        delete listener.__listenTo__;
+      }
+    }
+  },
+
+
+  // 事件处理
+  eventsArgs_ = function ( predicate, obj, events, callback, context, listening ) {
+
+    // jQuery风格
+    if ( M.isObject( events ) ) {
+      var i, l, k, evtList = M.isArray( events ) ? events : M.keys( events );
+      for ( i = 0, l = evtList.length; i < l; i ++ ) {
+        eventsArgs_( predicate, obj, k = evtList[ i ], events[ k ], callback, listening );
+      }
+    }
+
+    // 多个处理
+    else if ( events && splitter.test( events ) ) {
+      M.each( events.split( splitter ), function ( evt ) {
+        evt && predicate( obj, evt, callback, context, listening );
+      } );
+    }
+
+    // 单个处理
+    else {
+      predicate( obj, events, callback, context, listening );
+    }
+
+  },
+
+
+  // 绑定事件
+  on_ = function ( obj, events, callback, context, listening  ) {
+    if ( callback && M.isObject( events ) ) {
+      context = callback;
+      callback = void 0;
+    }
+    eventsArgs_( addToPool_, obj, events, callback, context, listening );
+  },
+
+
+  once_ = function ( obj, events, callback, context, listening ) {
+
+    if ( M.isObject( events ) ) {
+      var i, l, k, names = M.keys( events );
+      for ( i = 0, l = names.length; i < l; i ++ ) {
+        once_( obj, k = names[ i ], events[ k ], callback, listening );
+      }
+    }
+
+    var clb = function () {
+      callback.apply( this, arguments );
+      obj.off( events, clb, context );
+    };
+    clb.__clb__ = callback;
+
+    on_( obj, events, clb, context, listening );
+  },
+
+
+  // 销毁事件
+  // -events void 0 void 0 (object|string _ _)
+  // -void 0 callback void 0 (_ function _)
+  // -events callback void 0 (string function _)
+  // -events void 0 context (object|string _ object|bool)
+  // -void 0 callback context (_ function object|bool)
+  // -events callback context (string function object|bool)
+  off_ = function ( obj, events, callback, context, listening ) {
+    if ( M.isFunction( events ) ) {
+      context = callback;
+      callback = events;
+      events = void 0;
+    } else if ( events && callback && !M.isFunction( callback ) && !M.isFunction( events ) ) {
+      context = callback;
+      callback = void 0;
+    }
+    eventsArgs_( clearOutofPool_, obj, events, callback, context, listening );
+  },
+
+
+  // 触发事件
+  emit_ = function ( obj, names, args, wantEvent ) {
+    var
+    events = obj.__events__;
+    M.each( names.split( splitter ), function ( name ) {
+
+      // 事件触发开关
+      // silenceStack中的事件不触发
+      if ( name && !~M.indexOf( obj.__silenceStack__, name ) ) {
+        triggerEvt_( obj, events, name, args, wantEvent );
+      }
+
+    } );
+  },
+
+
+  triggerEvt_ = function ( obj, events, name, args, wantEvent ) {
+    var ev,
+    stack = events[ name ],
+    allStack = events[ 'all' ];
+    if ( stack ) {
+      if ( wantEvent ) {
+        ev = new M.Event( { type: name, currentType: name, target: obj, data: args } );
+      }
+      callEvtCb_( stack, ev ? [ ev ].concat( args ) : args );
+    }
+    if ( allStack && name !== 'all' ) {
+      if ( wantEvent ) {
+        ev = new M.Event( { type: name, currentType: 'all', target: obj, data: args } );
+      }
+      callEvtCb_( allStack, ev ? [ ev ].concat( args ) : args );
+    }
+  },
+
+
+  // 函数运行优化
+  callEvtCb_ = function ( stack, args ) {
+    var a1 = args[ 0 ], a2 = args[ 1 ], a3 = args[ 2 ], a4 = args[ 3 ];
+    switch ( args.length ) {
+      case 1: doWhileWithoutArguments_( stack, a1 ); return;
+      case 2: doWhileWithoutArguments_( stack, a1, a2 ); return;
+      case 3: doWhileWithoutArguments_( stack, a1, a2, a3 ); return;
+      case 4: doWhileWithoutArguments_( stack, a1, a2, a3, a4 ); return;
+      default: doWhile_( stack, args ); return;
+    }
+  },
+
+
+  doWhileWithoutArguments_ = function ( stack, a1, a2, a3, a4 ) {
+    var fireAll, sk,
+    isImmediatePropagationStopped = false,
+    ev = a1, i = -1, l = stack.length, trueList = [], falseList = [];
+    while ( ++ i < l && !isImmediatePropagationStopped ) {
+
+      // 基础自定义事件处理
+      sk = stack[ i ];
+
+      // DomEvented 事件处理
+      if ( sk.obj.__eventhandle__ ) {
+        fireAll = sk.obj.__eventhandle__[ ev.type ].__fireAll__;
+        if ( fireAll || ( ev.fired && ev.usecapture == void 0 ) || ev.usecapture === sk.context ) {
+          sk.callback.call( sk.obj.element, a1, a2, a3, a4 );
+        }
+      }
+
+      // 普通事件处理
+      else {
+        sk.callback.call( sk.context, a1, a2, a3, a4 );
+      }
+
+      isImmediatePropagationStopped = ev && ev.isImmediatePropagationStopped;
+
+    }
+  },
+
+
+  doWhile_ = function ( stack, args ) {
+    var fireAll, sk,
+    isImmediatePropagationStopped = false,
+    ev = args[ 0 ], i = -1, l = stack.length;
+    while ( ++ i < l && !isImmediatePropagationStopped ) {
+
+      // 基础自定义事件处理
+      sk = stack[ i ];
+
+      // DomEvented 事件处理
+      if ( sk.obj.__eventhandle__ ) {
+        fireAll = sk.obj.__eventhandle__[ ev.type ].__fireAll__;
+        if ( fireAll || ( ev.fired && ev.usecapture == void 0 ) || ev.usecapture === sk.context ) {
+          sk.callback.apply( sk.obj.element, args );
+        }
+      }
+
+      // 普通事件处理
+      else {
+        sk.callback.apply( sk.context, args );
+      }
+
+      isImmediatePropagationStopped = ev && ev.isImmediatePropagationStopped;
+
+    }
+  },
+
+
+  listenTo_ = function ( onFun, obj, events, callback, context ) {
+    var
+    thisId = M.getUid( this ),
+    objId = M.getUid( obj ),
+    listenTo = this.__listenTo__ || ( this.__listenTo__ = {} ),
+    listening = listenTo[ objId ];
+    if ( !listening ) {
+      listening = listenTo[ objId ] = { obj: obj, objId: objId, listener: this,
+          id: thisId, count: 0 };
+    }
+    onFun( obj, events, callback, context, listening );
+  },
+
+
+  eventedProto = {
+
+    init: function () {
+
+      // 我是独一无二的
+      M.getUid( this );
+
+      // 事件机制总开关
+      this.__silence__ = false;
+
+      this.__silenceStack__ = [];
+    },
+
+
+    destroy: function () {
+      M.removeUid( this );
+      M.Evented.super_( this, 'destroy' );
+    },
+
+
+    /**
+     * 添加事件开关
+     */
+    silence: function ( names /*, var_args*/ ) {
+      if ( !names ) return this.__silence__ = true;
+      if ( !M.isArray( names ) ) {
+        names = slice.call( arguments );
+      }
+      M.each( names, function ( name ) {
+        if ( !~M.indexOf( this.__silenceStack__, name ) ) {
+          this.__silenceStack__.push( name );
+        }
+      } );
+    },
+
+
+    /**
+     * 取消事件开关
+     */
+    desilence: function ( names ) {
+      if ( !names ) return this.__silence__ = false;
+      if ( !M.isArray( names ) ) names = [ names ];
+      this.__silenceStack__ = M.filter( this.__silenceStack__, function ( name ) {
+        return !~M.indexOf( names, name );
+      } );
+    },
+
+
+    /**
+     * 绑定事件
+     * 1.单个参数jquery风格
+     * { click: callback ... }
+     * 2.多个参数
+     * ( 'click', callback, [ context ] )
+     * ( 'click blur', callback, [ context ] )
+     */
+    on: function ( events, callback, context ) {
+      events && on_( this, events, callback, context );
+      return this;
+    },
+
+
+    once: function ( events, callback, context ) {
+      events && once_( this, events, callback, context );
+      return this;
+    },
+
+
+    /**
+     * 解绑事件
+     * 参数同上
+     */
+    off: function ( events, callback, context ) {
+      if ( events && this.__events__ ) off_( this, events, callback, context );
+      return this;
+    },
+
+
+    /**
+     * 触发事件
+     * 参数 names ('click'|'click blur')
+     */
+    trigger: function ( names /*, var_args*/ ) {
+      if ( !this.__silence__ && names && this.__events__ ) {
+        var ev, args = slice.call( arguments, 1 );
+        if ( M.isObject( names ) && names.type ) {
+          ev = names;
+          names = [ ev.type ];
+          args.unshift( ev );
+          this.__wantEvent__ = false;
+          ev.isImmediatePropagationStopped = false;
+        }
+        emit_( this, names, args, this.__wantEvent__ !== false );
+      }
+      return this;
+    },
+
+
+    listenTo: function ( obj, events, callback, context ) {
+      obj && listenTo_.call( this, on_, obj, events, callback, context );
+      return this;
+    },
+
+
+    listenToOnce: function ( obj, events, callback, context ) {
+      obj && listenTo_.call( this, once_, obj, events, callback, context );
+      return this;
+    },
+
+
+    stopListen: function ( obj, events, callback, context ) {
+      if ( obj && this.__listenTo__ ) {
+        var i, l, listening,
+        listenTo = this.__listenTo__,
+        ids = obj ? [ M.getUid( obj ) ] : M.keys( this.__listenTo__ );
+
+        for ( i = 0, l = ids.length; i < l; i ++ ) {
+          listening = listenTo[ ids[ i ] ];
+          if ( !listening ) break;
+          off_( listening.obj, events, callback, context, listening );
+        }
+      }
+      return this;
+    }
+
+  },
+
+
+  // 类方法
+  eventedStatic = {
+    version: '0.0.1',
+    eventpool: eventpool_,
+    getObject: function ( uid ) {
+      return eventpool_[ uid ];
+    }
+  };
+
+
+  M.Object = M.Evented = M.createClass( eventedProto, eventedStatic );
+
+
+}();
+
++ function ( win ) {
+
+  var
+  nav = win.navigator,
+  doc = win.document,
+  ua = nav.userAgent.toLowerCase(),
+  docEle = doc.documentElement,
+
+  ie = 'ActiveXObject' in win,
+
+  firefox   = ua.indexOf( 'firefox' ) !== -1,
+  webkit    = ua.indexOf( 'webkit' ) !== -1,
+  phantomjs = ua.indexOf( 'phantom' ) !== -1,
+  android23 = ua.search( 'android [23]' ) !== -1,
+  chrome    = ua.indexOf( 'chrome' ) !== -1,
+  gecko     = ua.indexOf( 'gecko' ) !== -1  && !webkit && !win.opera && !ie,
+
+  mobile = typeof orientation !== 'undefined' || ua.indexOf( 'mobile' ) !== -1,
+  msPointer = !win.PointerEvent && win.MSPointerEvent,
+  pointer = ( win.PointerEvent && nav.pointerEnabled ) || msPointer,
+
+  ie3d = ie && ( 'transition' in docEle.style ),
+  webkit3d = ( 'WebKitCSSMatrix' in win ) && ( 'm11' in new win.WebKitCSSMatrix() ) && !android23,
+  gecko3d = 'MozPerspective' in docEle.style,
+  opera12 = 'OTransition' in docEle.style,
+
+  eventList = [ 'focusin', 'focusout', 'mouseenter', 'mouseleave', 'input' ],
+
+  isSVG = docEle.nodeName.toLowerCase() === 'svg',
+
+  touch = !phantomjs && ( pointer || 'ontouchstart' in win ||
+      ( win.DocumentTouch && doc instanceof win.DocumentTouch ) ),
+
+  createElement = function () {
+    if ( typeof doc.createElement !== 'function' ) {
+      // This is the case in IE7, where the type of createElement is "object".
+      // For this reason, we cannot call apply() as Object is not a Function.
+      return doc.createElement( arguments[ 0 ] );
+    } else if ( isSVG ) {
+      return doc.createElementNS.call( doc, 'http://www.w3.org/2000/svg',
+          arguments[ 0 ] );
+    } else {
+      return doc.createElement.apply( doc, arguments );
+    }
+  },
+
+  hasEvent = ( function () {
+
+    // Detect whether event support can be detected via `in`. Test on a DOM element
+    // using the "blur" event b/c it should always exist. bit.ly/event-detection
+    var needsFallback = !( 'onblur' in doc.documentElement );
+
+    return function inner ( eventName, element ) {
+
+      var isSupported;
+      if ( !eventName ) { return false; }
+      if ( !element || typeof element === 'string' ) {
+        element = createElement( element || 'div' );
+      }
+
+      // Testing via the `in` operator is sufficient for modern browsers and IE.
+      // When using `setAttribute`, IE skips "unload", WebKit skips "unload" and
+      // "resize", whereas `in` "catches" those.
+      eventName = 'on' + eventName;
+      isSupported = eventName in element;
+
+      // Fallback technique for old Firefox - bit.ly/event-detection
+      if ( !isSupported && needsFallback ) {
+        if ( !element.setAttribute ) {
+          // Switch to generic element if it lacks `setAttribute`.
+          // It could be the `document`, `window`, or something else.
+          element = createElement( 'div' );
+        }
+
+        element.setAttribute( eventName, '' );
+        isSupported = typeof element[ eventName ] === 'function';
+
+        if ( element[ eventName ] !== undefined ) {
+          // If property was created, "remove it" by setting value to `undefined`.
+          element[ eventName ] = undefined;
+        }
+        element.removeAttribute( eventName );
+      }
+      return isSupported;
+    }
+  } )();
+
+  M.support = {
+    ie: ie,
+    ielt9: ie && !doc.addEventListener,
+    firefox: firefox,
+    webkit: webkit,
+    gecko: gecko,
+    android: ua.indexOf( 'android' ) !== -1,
+    android23: android23,
+    chrome: chrome,
+    safari: !chrome && ua.indexOf( 'safari' ) !== -1,
+
+    ie3d: ie3d,
+    webkit3d: webkit3d,
+    gecko3d: gecko3d,
+    opera12: opera12,
+    any3d: ( ie3d || webkit3d || gecko3d ) && !opera12 && !phantomjs,
+
+    mobile: mobile,
+    mobileWebkit: mobile && webkit,
+    mobileWebkit3d: mobile && webkit3d,
+    mobileOpera: mobile && win.opera,
+    mobileGecko: mobile && gecko,
+
+    touch: !!touch,
+    msPointer: !!msPointer,
+    pointer: !!pointer,
+
+    retina: ( win.devicePixelRatio || ( win.screen.deviceXDPI / win.screen.logicalXDPI ) ) > 1,
+  };
+
+
+  // 事件测试
+  M.each( eventList, function ( event ) {
+    M.support[ event ] = hasEvent( event );
+  } );
+
+}( root );
+
+
+
++ function () {
 
   var dom = {
 
@@ -1611,16 +1604,15 @@ M.Event = M.createClass( eventProto, eventStatic );
 
   M.dom = dom;
 
-} ();
+}();
 
 
 + function () {
 
-if ( !doc ) return;
-
 var
+splitter = /\s+/,
 ielt9 = M.support.ielt9,
-isECMAEvent = !!doc.addEventListener,
+isECMAEvent = !!root.document.addEventListener,
 eventHooks = {},
 
 // 事件缓存
@@ -1634,50 +1626,34 @@ rInputCheck = /^(?:radio|checkbox|)$/,
 baseProps = 'type target returnValue defaultPrevented currentTarget eventPhase timeStamp cancelable cancelBubble bubbles isTrusted'.split( ' ' ),
 
 
-uiEventProps = 'isChar detail layerX layerY pageX pageY view which'.split( ' ' ),
+uiEventProps = baseProps.concat( 'isChar detail layerX layerY pageX pageY view which'.split( ' ' ) ),
 
 
-focusEventProps = uiEventProps.concat( 'relatedTarget'.split( ' ' ) ),
+focusEventProps = uiEventProps.push( 'relatedTarget' ),
 
 
 mouseEventProps = uiEventProps.concat( 'altKey button clientX clientY ctrlKey metaKey movementX movementY offsetX offsetY relatedTarget screenX screenY shiftKey fromElement toElement webkitForce x y'.split( ' ' ) ),
+
 
 keyboardEventProps = uiEventProps.concat( 'altGraphKey altKey charCode ctrlKey keyCode keyIdentifier keyLocation location metaKey shiftKey'.split( ' ' ) ),
 
 
 
-// 事件统计来自 'http://www.w3school.com.cn/tags/html_ref_eventattributes.asp'
-formEvent = 'blur change contextmenu focus formchange forminput input invalid reset select submit'.split( ' ' ),
+// // 事件统计来自 'http://www.w3school.com.cn/tags/html_ref_eventattributes.asp'
+// formEvent = 'blur change contextmenu focus formchange forminput input invalid reset select submit'.split( ' ' ),
 
-// 鼠标事件
-mouseEvent = 'click dblclick drag dragend dragenter dragleave dragover dragstart drop mousedown mousemove mouseout mouseover mouseup mousewheel scroll'.split( ' ' ),
+// // 鼠标事件
+// mouseEvent = 'click dblclick drag dragend dragenter dragleave dragover dragstart drop mousedown mousemove mouseout mouseover mouseup mousewheel scroll'.split( ' ' ),
 
-// 键盘事件
-keyboardEvent = 'keydown keypress keyup'.split( ' ' ),
+// // 键盘事件
+// keyboardEvent = 'keydown keypress keyup'.split( ' ' ),
 
-// 针对 window 对象触发的事件（应用到 <body> 标签）
-windowEvent = 'afterprint beforeprint beforeonload error haschange load message offline online pagehide pageshow popstate redo resize storage undo unload blur focus'.split( ' ' ),
+// // 针对 window 对象触发的事件（应用到 <body> 标签）
+// windowEvent = 'afterprint beforeprint beforeonload error haschange load message offline online pagehide pageshow popstate redo resize storage undo unload blur focus'.split( ' ' ),
 
-// 适用于所有 HTML 元素，但常见于媒介元素中，比如 <audio>、<embed>、<img>、<object> 以及 <video>）
-mediaEvent = 'abort canplay canplaythrough durationchange emptied ended error loadeddata loadedmetadata loadstart pause play playing progress ratechange readystatechange seeked seeking stalled suspend timeupdate volumechange waiting'.split( ' ' ),
+// // 适用于所有 HTML 元素，但常见于媒介元素中，比如 <audio>、<embed>、<img>、<object> 以及 <video>）
+// mediaEvent = 'abort canplay canplaythrough durationchange emptied ended error loadeddata loadedmetadata loadstart pause play playing progress ratechange readystatechange seeked seeking stalled suspend timeupdate volumechange waiting'.split( ' ' ),
 
-
-allEvent = ( function () {
-  var all = [];
-  M.each( [
-    formEvent,
-    mouseEvent,
-    keyboardEvent,
-    windowEvent,
-    mediaEvent
-  ], function ( list ) {
-    var tmp = M.filter( list, function ( item ) {
-      return !~M.indexOf( all, item );
-    } );
-    all = all.concat( tmp );
-  } );
-  return all;
-} )(),
 
 
 domAddEventListener_ = function ( dom, name, callback, useCapture ) {
@@ -1810,11 +1786,11 @@ fixedEvent_ = function ( originalEvent ) {
 
   // 不同事件类添加不同的属性
   if ( root.MouseEvent && originalEvent instanceof root.MouseEvent ) {
-    copyProps = baseProps.concat( mouseEventProps );
+    copyProps = mouseEventProps;
   } else if ( root.FocusEvent && originalEvent instanceof root.FocusEvent ) {
-    copyProps = baseProps.concat( focusEventProps );
+    copyProps = focusEventProps;
   } else if ( root.KeyboardEvent && originalEvent instanceof root.KeyboardEvent ) {
-    copyProps = baseProps.concat( keyboardEventProps );
+    copyProps = keyboardEventProps;
   }
 
   newProps = M.pick( originalEvent, copyProps );
@@ -1857,9 +1833,164 @@ fixEvent = function ( event, originalEvent ) {
 };
 
 
-M.allEvent = allEvent;
 
 var
+
+eventProto = {
+
+  init: function () {
+
+    M.has( this, 'currentType' ) && ( delete this.currentType );
+
+    // 判定是否阻止了默认事件
+    this.isDefaultPrevented = false;
+
+    // 判定是否阻止了冒泡
+    this.isPropagationStopped = false;
+
+    // 判定是否阻止了同类型事件的冒泡
+    this.isImmediatePropagationStopped = false;
+  },
+
+  // 模拟DOM LV2的阻止默认事件的方法
+  preventDefault: function () {
+    // DOM LV3
+    this.isDefaultPrevented = true;
+    var e = this.originalEvent;
+
+    if ( e ) {
+      // DOM LV2
+      if ( e.preventDefault ) {
+        e.preventDefault();
+      }
+      // IE6-8
+      else {
+        e.returnValue = false;
+      }
+    }
+  },
+
+  // 模拟DOM LV2阻止事件冒泡的方法
+  stopPropagation: function () {
+    // DOM LV3
+    this.isPropagationStopped = true;
+    var e = this.originalEvent;
+
+    if ( e ) {
+      // DOM LV2
+      if ( e.stopPropagation ) {
+        e.stopPropagation();
+      }
+
+      // IE6-8
+      this.cancelBubble = e.cancelBubble = true;
+    }
+  },
+
+  // 模拟DOM LV3阻止同类型事件冒泡的方法
+  stopImmediatePropagation: function () {
+    this.isImmediatePropagationStopped = true;
+    this.stopPropagation();
+  }
+
+},
+
+eventStatic = {};
+
+M.DomEvent = M.createClass( M.Event, eventProto, eventStatic );
+
+
+var
+
+domEventedProto = {
+
+  init: function ( element ) {
+    this.element = element;
+    this.__wantEvent__ = false;
+    element.__isEvented__ = M.getUid( this );
+    cache.child( element ).put( 'evented', this );
+  },
+
+
+  // 先绑定dom再绑定object
+  on: function ( events, callback, useCapture ) {
+    var predicate = M.bind( addEventHandle_, this );
+    useCapture = !isECMAEvent || useCapture === true;
+    M.DomEvented.super_( this, 'on', events, callback, useCapture );
+    domeventsArgs_( predicate, this.element, events, callback, useCapture );
+  },
+
+
+  // 先解绑object再解绑dom
+  off: function ( events, callback, useCapture ) {
+    var predicate = M.bind( removeEventHandle_, this );
+    if ( !events ) {
+      events = M.keys( this.__events__ ).join( ' ' );
+    }
+    M.DomEvented.super_( this, 'off', events, callback, useCapture );
+    domeventsArgs_( predicate, this.element, events, callback, useCapture );
+  },
+
+
+  trigger: function ( names /*, var_args*/ ) {
+    var ev, parents, args = slice.call( arguments, 1 );
+    if ( M.isObject( names ) && names.type ) {
+      ev = names;
+      names = [ ev.type ];
+    } else if ( M.isString( names ) ) {
+      names = names.split( splitter );
+    }
+
+    M.each( names, function ( name ) {
+
+      var firedEvent;
+
+      if ( !name ) return;
+      parents = M.dom.parents( this.element, true, true );
+
+      // 模拟捕获
+      if ( !ev || ev.usecapture == void 0 ) {
+        M.each( parents, function ( parent ) {
+          if ( parent.__isEvented__ && !this.isPropagationStopped ) {
+            var evt, obj = M.Evented.getObject( parent.__isEvented__ );
+            if ( obj ) {
+              evt = new M.DomEvent( { type: name, target: this.element, usecapture: true } );
+              M.DomEvented.super_.apply( null, [ obj, 'trigger', name, evt ].concat( args ) );
+            }
+          }
+        }, this );
+      }
+
+      if ( firedEvent = ev ) {
+        firedEvent = new M.DomEvent( { type: name, target: this.element, fired: true } );
+      }
+      M.DomEvented.super_.apply( null, [ this, 'trigger', name, firedEvent ].concat( args ) );
+
+      // 模拟冒泡
+      if ( !ev || ev.usecapture == void 0 ) {
+        M.each( parents.reverse(), function ( parent ) {
+          if ( parent.__isEvented__ ) {
+            var evt, obj = M.Evented.getObject( parent.__isEvented__ );
+            if ( obj ) {
+              evt = new M.DomEvent( { type: name, target: this.element, usecapture: false } );
+              M.DomEvented.super_.apply( null, [ obj, 'trigger', name, evt ].concat( args ) );
+            }
+          }
+        }, this );
+      }
+
+    }, this );
+  }
+},
+
+domEventedStatic = {};
+
+M.DomEvented = M.createClass( M.Evented, domEventedProto, domEventedStatic );
+
+
+
+var
+
 hookMouseEvent = 'contextmenu click dblclick mousedown mousemove mouseout mouseover mouseup mousewheel'.split( ' ' ),
 
 hookKeybordEvent = 'keydown keypress keyup'.split( ' ' );
@@ -1878,8 +2009,7 @@ mixEventHook( [ 'focusin', 'focusout' ], function ( events ) {
 
     M.each( events, function ( eventName ) {
 
-      var
-      hook = {};
+      var hook = {};
 
       hook.fix = function ( event ) {
 
@@ -2172,160 +2302,7 @@ mixEventHook( hookKeybordEvent, function ( events ) {
 } );
 
 
-var
-
-eventProto = {
-
-  init: function () {
-
-    M.has( this, 'currentType' ) && ( delete this.currentType );
-
-    // 判定是否阻止了默认事件
-    this.isDefaultPrevented = false;
-
-    // 判定是否阻止了冒泡
-    this.isPropagationStopped = false;
-
-    // 判定是否阻止了同类型事件的冒泡
-    this.isImmediatePropagationStopped = false;
-  },
-
-  // 模拟DOM LV2的阻止默认事件的方法
-  preventDefault: function () {
-    // DOM LV3
-    this.isDefaultPrevented = true;
-    var e = this.originalEvent;
-
-    if ( e ) {
-      // DOM LV2
-      if ( e.preventDefault ) {
-        e.preventDefault();
-      }
-      // IE6-8
-      else {
-        e.returnValue = false;
-      }
-    }
-  },
-
-  // 模拟DOM LV2阻止事件冒泡的方法
-  stopPropagation: function () {
-    // DOM LV3
-    this.isPropagationStopped = true;
-    var e = this.originalEvent;
-
-    if ( e ) {
-      // DOM LV2
-      if ( e.stopPropagation ) {
-        e.stopPropagation();
-      }
-
-      // IE6-8
-      this.cancelBubble = e.cancelBubble = true;
-    }
-  },
-
-  // 模拟DOM LV3阻止同类型事件冒泡的方法
-  stopImmediatePropagation: function () {
-    this.isImmediatePropagationStopped = true;
-    this.stopPropagation();
-  }
-
-},
-
-eventStatic = {};
-
-M.DomEvent = M.createClass( M.Event, eventProto, eventStatic );
-
-
-var
-
-domEventedProto = {
-
-  init: function ( element ) {
-    this.element = element;
-    this.__wantEvent__ = false;
-    element.__isEvented__ = M.getUid( this );
-    cache.child( element ).put( 'evented', this );
-  },
-
-
-  // 先绑定dom再绑定object
-  on: function ( events, callback, useCapture ) {
-    var predicate = M.bind( addEventHandle_, this );
-    useCapture = !isECMAEvent || useCapture === true;
-    M.DomEvented.super_( this, 'on', events, callback, useCapture );
-    domeventsArgs_( predicate, this.element, events, callback, useCapture );
-  },
-
-
-  // 先解绑object再解绑dom
-  off: function ( events, callback, useCapture ) {
-    var predicate = M.bind( removeEventHandle_, this );
-    if ( !events ) {
-      events = M.keys( this.__events__ ).join( ' ' );
-    }
-    M.DomEvented.super_( this, 'off', events, callback, useCapture );
-    domeventsArgs_( predicate, this.element, events, callback, useCapture );
-  },
-
-
-  trigger: function ( names /*, var_args*/ ) {
-    var ev, parents, args = slice.call( arguments, 1 );
-    if ( M.isObject( names ) && names.type ) {
-      ev = names;
-      names = [ ev.type ];
-    } else if ( M.isString( names ) ) {
-      names = names.split( splitter );
-    }
-
-    M.each( names, function ( name ) {
-
-      var firedEvent;
-
-      if ( !name ) return;
-      parents = M.dom.parents( this.element, true, true );
-
-      // 模拟捕获
-      if ( !ev || ev.usecapture == void 0 ) {
-        M.each( parents, function ( parent ) {
-          if ( parent.__isEvented__ && !this.isPropagationStopped ) {
-            var evt, obj = M.Evented.getObject( parent.__isEvented__ );
-            if ( obj ) {
-              evt = new M.DomEvent( { type: name, target: this.element, usecapture: true } );
-              M.DomEvented.super_.apply( null, [ obj, 'trigger', name, evt ].concat( args ) );
-            }
-          }
-        }, this );
-      }
-
-      if ( firedEvent = ev ) {
-        firedEvent = new M.DomEvent( { type: name, target: this.element, fired: true } );
-      }
-      M.DomEvented.super_.apply( null, [ this, 'trigger', name, firedEvent ].concat( args ) );
-
-      // 模拟冒泡
-      if ( !ev || ev.usecapture == void 0 ) {
-        M.each( parents.reverse(), function ( parent ) {
-          if ( parent.__isEvented__ ) {
-            var evt, obj = M.Evented.getObject( parent.__isEvented__ );
-            if ( obj ) {
-              evt = new M.DomEvent( { type: name, target: this.element, usecapture: false } );
-              M.DomEvented.super_.apply( null, [ obj, 'trigger', name, evt ].concat( args ) );
-            }
-          }
-        }, this );
-      }
-
-    }, this );
-  }
-},
-
-domEventedStatic = {};
-
-M.DomEvented = M.createClass( M.Evented, domEventedProto, domEventedStatic );
-
-} ();
+}();
 
 if ( typeof exports !== 'undefined' ) {
   if ( typeof module !== 'undefined' && module.exports ) {

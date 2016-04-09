@@ -5,7 +5,7 @@ ObjProto = Object.prototype,
 FunProto = Function.prototype,
 
 
-// push     = ArrProto.push,
+push     = ArrProto.push,
 slice    = ArrProto.slice,
 toString = ObjProto.toString,
 hasOwnProperty = ObjProto.hasOwnProperty,
@@ -22,8 +22,9 @@ nonenumprops_ = [
   'valueOf'
 ],
 
+
 // 检查浏览器是否可以遍历出以上属性
-hasEnumBug = !{ toString: null }.propertyIsEnumerable( 'toString' ),
+hasEnumBug = !{ toString: null }.propertyIsEnumerable( 'toString' );
 
 // getLength = M.property( 'length' ),
 
@@ -55,60 +56,64 @@ hasEnumBug = !{ toString: null }.propertyIsEnumerable( 'toString' ),
 // },
 
 
-collectnonenumprops_ = function ( obj, keys_ ) {
-  var key, keys = [], idx = nonenumprops_.length;
-  while ( idx -- ) {
-    key = nonenumprops_[ idx ];
-    if ( hasOwnProperty.call( obj, key ) && !~M.indexOf( keys_, key ) ) {
-      keys.push( key );
-    }
-  }
-  return keys;
-},
 
++ function () {
 
-createindexfinder_ = function ( dir, predicateFind /*, sortedIndex*/ ) {
-  return function ( array, item, idx ) {
-    var i = 0, length = array.length;
-    if ( typeof idx == 'number' ) {
-      if ( dir > 0 ) {
-        i = idx >= 0 ? idx : Math.max( idx + length, i );
-      } else {
-        length = idx >= 0 ? Math.min( idx + 1, length ) : idx + length + 1;
+  var
+
+  // 1 从前往后 -1 从后往前
+  createindexfinder_ = function ( dir, predicateFind /*, sortedIndex*/ ) {
+    return function ( array, item, idx ) {
+      var i = 0, length = array.length;
+      if ( typeof idx == 'number' ) {
+        if ( dir > 0 ) {
+          i = idx >= 0 ? idx : Math.max( idx + length, i );
+        } else {
+          length = idx >= 0 ? Math.min( idx + 1, length ) : idx + length + 1;
+        }
       }
-    }
 
-    // 二分法优化
-    // else if ( sortedIndex && idx && length ) {
-    //   idx = sortedIndex( array, item );
-    //   return array[ idx ] === item ? idx : -1;
-    // }
+      // 二分法优化
+      // else if ( sortedIndex && idx && length ) {
+      //   idx = sortedIndex( array, item );
+      //   return array[ idx ] === item ? idx : -1;
+      // }
 
-    // 找NaN
-    if ( item !== item ) {
-      idx = predicateFind( slice.call( array, i, length ), M.isNaN );
-      return idx >= 0 ? idx + i : -1;
-    }
+      // 找NaN
+      if ( item !== item ) {
+        idx = predicateFind( slice.call( array, i, length ), M.isNaN );
+        return idx >= 0 ? idx + i : -1;
+      }
 
-    for ( idx = dir > 0 ? i : length - 1; idx >= 0 && idx < length; idx += dir ) {
-      if ( array[ idx ] === item ) return idx;
-    }
-    return -1;
-  };
-},
+      for ( idx = dir > 0 ? i : length - 1; idx >= 0 && idx < length; idx += dir ) {
+        if ( array[ idx ] === item ) return idx;
+      }
+      return -1;
+    };
+  },
+
+  // 1 从前往后 -1 从后往前
+  createpredicateindexfinder_ = function ( dir ) {
+    return function ( array, predicate, context ) {
+      var
+      length = array.length,
+      index = dir > 0 ? 0 : length - 1;
+      for (; index >= 0 && index < length; index += dir ) {
+        if ( predicate( array[ index ], index, array ) ) return index;
+      }
+      return -1;
+    };
+  },
+
+  findIndex_     = createpredicateindexfinder_( 1 ),
+  findLastIndex_ = createpredicateindexfinder_( -1 );
+
+  M.indexOf     = createindexfinder_( 1, findIndex_ /*, M.sortedIndex*/ );
+  M.lastIndexOf = createindexfinder_( -1, findLastIndex_ );
+
+}();
 
 
-createpredicateindexfinder_ = function ( dir ) {
-  return function ( array, predicate, context ) {
-    var
-    length = array.length,
-    index = dir > 0 ? 0 : length - 1;
-    for (; index >= 0 && index < length; index += dir ) {
-      if ( predicate( array[ index ], index, array ) ) return index;
-    }
-    return -1;
-  };
-},
 
 
 /**
@@ -127,13 +132,9 @@ createpredicateindexfinder_ = function ( dir ) {
 
 
 
-findIndex_     = createpredicateindexfinder_( 1 ),
-findLastIndex_ = createpredicateindexfinder_( -1 );
-
-
-M.indexOf     = createindexfinder_( 1, findIndex_ /*, M.sortedIndex*/ );
-M.lastIndexOf = createindexfinder_( -1, findLastIndex_ );
-
+/**
+ * 对象UID操作
+ */
 
 // 对象计数
 M.uidcounter_ = 0;
@@ -143,8 +144,7 @@ M._uid_ = 'uid_' + ( ( Math.random() * 1e9 ) >>> 0 );
 
 
 M.getUid = function ( obj ) {
-  return obj[ M._uid_ ] ||
-  ( obj[ M._uid_ ] = ++ M.uidcounter_ );
+  return obj[ M._uid_ ] || ( obj[ M._uid_ ] = ++ M.uidcounter_ );
 };
 
 
@@ -200,12 +200,11 @@ M.pick = function ( obj, props ) {
 
 
 // 扩展函数
-M.extend = function( target /*, var_args*/ ) {
+M.extend = function ( target /*, var_args*/ ) {
 
   var i, j, l, npl, key, source;
 
   l = arguments.length;
-  npl = nonenumprops_.length;
   if ( l < 2 || target == null ) return target;
 
   for ( i = 1; i < l; i ++ ) {
@@ -215,6 +214,7 @@ M.extend = function( target /*, var_args*/ ) {
     }
 
     if ( hasEnumBug ) {
+      npl = nonenumprops_.length;
       for ( j = 0; j < npl; j ++ ) {
         key = nonenumprops_[ j ];
         if ( hasOwnProperty.call( source, key ) ) {
@@ -225,7 +225,6 @@ M.extend = function( target /*, var_args*/ ) {
   }
 
   return target;
-
 };
 
 
@@ -234,7 +233,6 @@ M.extendOwn = function( target /*, var_args*/ ) {
   var i, j, l, npl, key, source;
 
   l = arguments.length;
-  npl = nonenumprops_.length;
   if ( l < 2 || target == null ) return target;
 
   for ( i = 1; i < l; i ++ ) {
@@ -246,6 +244,7 @@ M.extendOwn = function( target /*, var_args*/ ) {
     }
 
     if ( hasEnumBug ) {
+      npl = nonenumprops_.length;
       for ( j = 0; j < npl; j ++ ) {
         key = nonenumprops_[ j ];
         if ( hasOwnProperty.call( source, key ) ) {
@@ -256,7 +255,6 @@ M.extendOwn = function( target /*, var_args*/ ) {
   }
 
   return target;
-
 };
 
 
@@ -310,8 +308,9 @@ M.typeOf = function ( value ) {
   return s;
 };
 
+
 // 判断是否定义过，未定义则等于undefined
-M.isDef = function( val ) {
+M.isDef = function ( val ) {
   return val !== void 0;
 };
 
@@ -368,27 +367,63 @@ M.isString = function ( obj ) {
 };
 
 
-M.isEmpty = function ( obj ) {
++ function () {
 
-  if ( obj == null ) return true;
-  if ( M.isArrayLike( obj ) &&
-      ( M.isArray( obj ) || M.isString( obj ) || M.isArguments( obj ) ) ) {
-    return obj.length === 0;
-  }
+  var collectnonenumprops_ = function ( obj, keys_ ) {
+    var key, keys = [], idx = nonenumprops_.length;
+    while ( idx -- ) {
+      key = nonenumprops_[ idx ];
+      if ( hasOwnProperty.call( obj, key ) && !~M.indexOf( keys_, key ) ) {
+        keys.push( key );
+      }
+    }
+    return keys;
+  };
 
-  var key, keys;
+  M.isEmpty = function ( obj ) {
 
-  for ( key in obj ) {
-    return false;
-  }
+    if ( obj == null ) return true;
 
-  if ( hasEnumBug ) {
-    keys = collectnonenumprops_( obj, [] );
-    return keys.length === 0;
-  }
+    if ( M.isArrayLike( obj ) && ( M.isArray( obj ) || M.isString( obj ) || M.isArguments( obj ) ) ) {
+      return obj.length === 0;
+    }
 
-  return true;
-};
+    var key, keys;
+
+    for ( key in obj ) {
+      return false;
+    }
+
+    if ( hasEnumBug ) {
+      keys = collectnonenumprops_( obj, [] );
+      return keys.length === 0;
+    }
+
+    return true;
+  };
+
+
+  M.keys = function ( obj ) {
+
+    if ( !M.isObject( obj ) ) return [];
+
+    if ( Object.keys ) return Object.keys( obj );
+
+    var key, keys = [];
+    for ( key in obj ) {
+      if ( M.has( obj, key ) ) keys.push( key );
+    }
+
+    if ( hasEnumBug ) {
+      keys.concat( collectnonenumprops_( obj, keys ) );
+    }
+
+    return keys;
+  };
+
+}();
+
+
 
 
 M.has = function ( obj, key ) {
@@ -425,70 +460,57 @@ M.filter = function ( obj, predicate, context ) {
 };
 
 
-M.keys = function ( obj ) {
++ function () {
 
-  if ( !M.isObject( obj ) ) return [];
-  if ( Object.keys ) return Object.keys( obj );
+  var
 
-  var key, keys = [];
-  for ( key in obj ) {
-    if ( M.has( obj, key ) ) keys.push( key );
-  }
-
-  if ( hasEnumBug ) {
-    keys.concat( collectnonenumprops_( obj, keys ) );
-  }
-
-  return keys;
-};
+  // bind函数
+  bindNative_ = function ( fn, context /*, var_args*/ ) {
+    return fn.call.apply( fn.bind, arguments );  // 溜
+  },
 
 
-
-// bind函数
-var bindNative_ = function ( fn, context /*, var_args*/ ) {
-  return fn.call.apply( fn.bind, arguments );  // 溜
-};
-
-
-var bindJs_ = function ( fn, context /*, var_args*/ ) {
-  if ( arguments.length > 2 ) {
-    var boundArgs = ArrProto.slice.call( arguments, 2 );
-    return function () {
-      // Prepend the bound arguments to the current arguments.
-      var newArgs = ArrProto.slice.call( arguments );
-      ArrProto.unshift.apply( newArgs, boundArgs );
-      return fn.apply( context, newArgs );
-    };
-  }
-  else {
-    return function () {
-      return fn.apply( context, arguments );
-    };
-  }
-};
+  bindJs_ = function ( fn, context /*, var_args*/ ) {
+    if ( arguments.length > 2 ) {
+      var boundArgs = ArrProto.slice.call( arguments, 2 );
+      return function () {
+        // Prepend the bound arguments to the current arguments.
+        var newArgs = ArrProto.slice.call( arguments );
+        ArrProto.unshift.apply( newArgs, boundArgs );
+        return fn.apply( context, newArgs );
+      };
+    }
+    else {
+      return function () {
+        return fn.apply( context, arguments );
+      };
+    }
+  };
 
 
-M.bind = function ( fn, context /*, var_args*/ ) {
+  M.bind = function ( fn, context /*, var_args*/ ) {
 
-  if ( !fn ) {
-    throw new Error( "Can't find any function" );
-  }
+    if ( !fn ) {
+      throw new Error( "Can't find any function" );
+    }
 
-  if ( FunProto.bind && FunProto.bind.toString().indexOf( 'native code' ) != -1 ) {
-    M.bind = bindNative_;
-  } else {
-    M.bind = bindJs_;
-  }
+    if ( FunProto.bind && FunProto.bind.toString().indexOf( 'native code' ) != -1 ) {
+      M.bind = bindNative_;
+    } else {
+      M.bind = bindJs_;
+    }
 
-  return M.bind.apply( null, arguments );
-};
+    return M.bind.apply( null, arguments );
+  };
+
+}();
 
 
 M.partial = function ( fn /*, var_args*/ ) {
   var args = ArrProto.slice.call( arguments, 1 );
   return function () {
     var newArgs = args.slice();
-    newArgs.push.apply( newArgs, arguments );
+    push.apply( newArgs, arguments );
     return fn.apply( this, newArgs );
   };
 };
@@ -500,55 +522,61 @@ M.each( [ 'Arguments', 'Function', 'Number', 'Date', 'RegExp', 'Error' ], functi
   };
 } );
 
+
 + function () {
+
   if ( !M.isArguments( arguments ) ) {
     M.isArguments = function ( obj ) {
       return M.has( obj, 'callee' );
     };
   }
+
+  /**
+   * Indicates whether or not we can call 'eval' directly to eval code in the
+   * global scope. Set to a Boolean by the first call to mace.globalEval (which
+   * empirically tests whether eval works for globals). @see mace.globalEval
+   * @type {?boolean}
+   * @private
+   */
+  var evalWorksForGlobals_ = !!root.execScript || ( function () {
+    root.eval( 'var _et_ = 1' );
+    if ( root._et_ != void 0 ) {
+      delete root._et_;
+      return true;
+    }
+    return false;
+  }() );
+
+  /**
+   * Evals JavaScript in the global scope.  In IE this uses execScript, other
+   * browsers use mace.global.eval. If mace.global.eval does not evaluate in the
+   * global scope (for example, in Safari), appends a script tag instead.
+   * Throws an exception if neither execScript or eval is defined.
+   * @param {string} script JavaScript string.
+   */
+  M.globalEval = function ( script ) {
+    if ( root.execScript ) {
+      root.execScript( script, 'JavaScript' );
+    } else if ( root.eval ) {
+      if ( evalWorksForGlobals_ ) {
+        root.eval( script );
+      } else if ( doc ) {
+        var scriptElt = doc.createElement( 'script' );
+        scriptElt.type = 'text/javascript';
+        scriptElt.defer = false;
+        // Note(user): can't use .innerHTML since "t('<test>')" will fail and
+        // .text doesn't work in Safari 2.  Therefore we append a text node.
+        scriptElt.appendChild( doc.createTextNode( script ) );
+        doc.body.appendChild( scriptElt );
+        doc.body.removeChild( scriptElt );
+      }
+    } else {
+      throw Error( 'globalEval not available' );
+    }
+  };
+
 }();
 
-/**
- * Indicates whether or not we can call 'eval' directly to eval code in the
- * global scope. Set to a Boolean by the first call to mace.globalEval (which
- * empirically tests whether eval works for globals). @see mace.globalEval
- * @type {?boolean}
- * @private
- */
-var evalWorksForGlobals_ = !!root.execScript || ( function () {
-  root.eval( 'var _et_ = 1' );
-  if ( root._et_ != void 0 ) {
-    delete root._et_;
-    return true;
-  }
-  return false;
-} () );
 
 
-/**
- * Evals JavaScript in the global scope.  In IE this uses execScript, other
- * browsers use mace.global.eval. If mace.global.eval does not evaluate in the
- * global scope (for example, in Safari), appends a script tag instead.
- * Throws an exception if neither execScript or eval is defined.
- * @param {string} script JavaScript string.
- */
-M.globalEval = function ( script ) {
-  if ( root.execScript ) {
-    root.execScript( script, 'JavaScript' );
-  } else if ( root.eval ) {
-    if ( evalWorksForGlobals_ ) {
-      root.eval( script );
-    } else if ( doc ) {
-      var scriptElt = doc.createElement( 'script' );
-      scriptElt.type = 'text/javascript';
-      scriptElt.defer = false;
-      // Note(user): can't use .innerHTML since "t('<test>')" will fail and
-      // .text doesn't work in Safari 2.  Therefore we append a text node.
-      scriptElt.appendChild( doc.createTextNode( script ) );
-      doc.body.appendChild( scriptElt );
-      doc.body.removeChild( scriptElt );
-    }
-  } else {
-    throw Error( 'globalEval not available' );
-  }
-};
+

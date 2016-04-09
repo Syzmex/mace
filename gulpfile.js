@@ -13,12 +13,13 @@ gulp.task( 'outputJs', function () {
   gulp.src( [
       'src/core.js',
       'src/utils.js',
-      'src/browser.js',
       'src/object.js',
       'src/dictionary.js',
       'src/event.js',
+      'src/browser.js',
       'src/dom.js',
       'src/domevent.js',
+      'src/domeventhook.js',
       'src/mace.js' ] )
     .pipe( concat( 'mace.js' ) )
     .pipe( gulp.dest( buildpath ) )

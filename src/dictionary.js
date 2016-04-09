@@ -4,16 +4,6 @@
 
   var
 
-  counter_ = 0,
-
-  dictionary = {},
-
-  dicmap = {};
-
-
-
-  var
-
   dicProto = {
 
     init: function () {
@@ -97,25 +87,9 @@
 
 
   dicStatic = {
-
-    uuid: function () {
-      return ++ counter_;
-    }
-
+    version: '0.0.1'
   };
-
 
   M.Cache = M.Dictionary = M.createClass( dicProto, dicStatic );
 
-
-} ();
-
-
-/*
-
-var
-mode = new M.Cache();
-mode.put( obj, {} );
-mode.get( obj ); ==> {}
-
- */
+}();

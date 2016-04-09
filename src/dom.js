@@ -3,8 +3,6 @@
 
 + function () {
 
-  if ( !doc ) return;
-
   var dom = {
 
 
@@ -69,4 +67,4 @@
 
   M.dom = dom;
 
-} ();
+}();

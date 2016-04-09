@@ -5,8 +5,6 @@
 
 var
 M = {},
-root = M.global = this,
-nav = root.navigator,
-doc = root.document;
+root = M.global = this;
 
 M.version = '0.0.1';

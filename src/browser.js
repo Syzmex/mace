@@ -1,47 +1,47 @@
 
-+ function ( win, document, navigator ) {
-
-  if ( !document ) return;
++ function ( win ) {
 
   var
-  ua = navigator.userAgent.toLowerCase(),
-  doc = document.documentElement,
+  nav = win.navigator,
+  doc = win.document,
+  ua = nav.userAgent.toLowerCase(),
+  docEle = doc.documentElement,
 
   ie = 'ActiveXObject' in win,
 
   firefox   = ua.indexOf( 'firefox' ) !== -1,
   webkit    = ua.indexOf( 'webkit' ) !== -1,
   phantomjs = ua.indexOf( 'phantom' ) !== -1,
-  android23 = ua.search( 'android [23]') !== -1,
+  android23 = ua.search( 'android [23]' ) !== -1,
   chrome    = ua.indexOf( 'chrome' ) !== -1,
   gecko     = ua.indexOf( 'gecko' ) !== -1  && !webkit && !win.opera && !ie,
 
   mobile = typeof orientation !== 'undefined' || ua.indexOf( 'mobile' ) !== -1,
   msPointer = !win.PointerEvent && win.MSPointerEvent,
-  pointer = ( win.PointerEvent && navigator.pointerEnabled ) || msPointer,
+  pointer = ( win.PointerEvent && nav.pointerEnabled ) || msPointer,
 
-  ie3d = ie && ( 'transition' in doc.style ),
+  ie3d = ie && ( 'transition' in docEle.style ),
   webkit3d = ( 'WebKitCSSMatrix' in win ) && ( 'm11' in new win.WebKitCSSMatrix() ) && !android23,
-  gecko3d = 'MozPerspective' in doc.style,
-  opera12 = 'OTransition' in doc.style,
+  gecko3d = 'MozPerspective' in docEle.style,
+  opera12 = 'OTransition' in docEle.style,
 
   eventList = [ 'focusin', 'focusout', 'mouseenter', 'mouseleave', 'input' ],
 
-  isSVG = doc.nodeName.toLowerCase() === 'svg',
+  isSVG = docEle.nodeName.toLowerCase() === 'svg',
 
   touch = !phantomjs && ( pointer || 'ontouchstart' in win ||
-      ( win.DocumentTouch && document instanceof win.DocumentTouch ) ),
+      ( win.DocumentTouch && doc instanceof win.DocumentTouch ) ),
 
   createElement = function () {
-    if ( typeof document.createElement !== 'function' ) {
+    if ( typeof doc.createElement !== 'function' ) {
       // This is the case in IE7, where the type of createElement is "object".
       // For this reason, we cannot call apply() as Object is not a Function.
-      return document.createElement( arguments[ 0 ] );
+      return doc.createElement( arguments[ 0 ] );
     } else if ( isSVG ) {
-      return document.createElementNS.call( document, 'http://www.w3.org/2000/svg',
+      return doc.createElementNS.call( doc, 'http://www.w3.org/2000/svg',
           arguments[ 0 ] );
     } else {
-      return document.createElement.apply( document, arguments );
+      return doc.createElement.apply( doc, arguments );
     }
   },
 
@@ -49,7 +49,7 @@
 
     // Detect whether event support can be detected via `in`. Test on a DOM element
     // using the "blur" event b/c it should always exist. bit.ly/event-detection
-    var needsFallback = !( 'onblur' in document.documentElement );
+    var needsFallback = !( 'onblur' in doc.documentElement );
 
     return function inner ( eventName, element ) {
 
@@ -88,7 +88,7 @@
 
   M.support = {
     ie: ie,
-    ielt9: ie && !document.addEventListener,
+    ielt9: ie && !doc.addEventListener,
     firefox: firefox,
     webkit: webkit,
     gecko: gecko,
@@ -101,7 +101,7 @@
     webkit3d: webkit3d,
     gecko3d: gecko3d,
     opera12: opera12,
-    any3d: !win.L_DISABLE_3D && ( ie3d || webkit3d || gecko3d ) && !opera12 && !phantomjs,
+    any3d: ( ie3d || webkit3d || gecko3d ) && !opera12 && !phantomjs,
 
     mobile: mobile,
     mobileWebkit: mobile && webkit,
@@ -113,7 +113,7 @@
     msPointer: !!msPointer,
     pointer: !!pointer,
 
-    retina: ( win.devicePixelRatio || ( win.screen.deviceXDPI / win.screen.logicalXDPI ) ) > 1
+    retina: ( win.devicePixelRatio || ( win.screen.deviceXDPI / win.screen.logicalXDPI ) ) > 1,
   };
 
 
@@ -122,4 +122,4 @@
     M.support[ event ] = hasEvent( event );
   } );
 
-}( root, doc, nav );
+}( root );

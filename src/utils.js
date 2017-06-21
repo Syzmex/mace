@@ -337,6 +337,11 @@ M.isObject = function ( obj ) {
 };
 
 
+M.isWindow = function ( obj ) {
+  return obj != null && obj == obj.window;
+}
+
+
 M.isDateLike = function ( obj ) {
   return M.isObject( obj ) && typeof obj.getFullYear == 'function';
 };
@@ -538,7 +543,10 @@ M.each( [ 'Arguments', 'Function', 'Number', 'Date', 'RegExp', 'Error' ], functi
    * @type {?boolean}
    * @private
    */
-  var evalWorksForGlobals_ = !!root.execScript || ( function () {
+
+  var
+  doc = root.document,
+  evalWorksForGlobals_ = !!root.execScript || ( function () {
     root.eval( 'var _et_ = 1' );
     if ( root._et_ != void 0 ) {
       delete root._et_;
@@ -560,7 +568,7 @@ M.each( [ 'Arguments', 'Function', 'Number', 'Date', 'RegExp', 'Error' ], functi
     } else if ( root.eval ) {
       if ( evalWorksForGlobals_ ) {
         root.eval( script );
-      } else if ( doc ) {
+      } else {
         var scriptElt = doc.createElement( 'script' );
         scriptElt.type = 'text/javascript';
         scriptElt.defer = false;

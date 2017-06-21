@@ -5,6 +5,6 @@
 
 var
 M = {},
-root = M.global = this;
+root = window;
 
 M.version = '0.0.1';
